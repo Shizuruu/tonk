@@ -49,7 +49,7 @@ serverIDDict = {
 "RappyCasino": "410601412620320819"
 }
 OtherIDDict = {
-"botOwner": "",
+"Tenj": "",
 "ControlPanel": "322466466479734784",
 "EmojiStorage": "408395363762962432"
 }
