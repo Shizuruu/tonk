@@ -362,6 +362,7 @@ async def on_message(message):
             userstr = message.content
             userstr = userstr.replace("!startmpa", "")
             userstr2 = ''
+            inTesting = False
             # This checks if Tonk has the deleting permission. If it doesn't, don't run the script at all and just stop.
             try:
                 await client.delete_message(message)
@@ -372,6 +373,7 @@ async def on_message(message):
             if message.channel.name.startswith('mpa') or message.channel.id == ChannelIDDict['IshanaQuestBoard']:
                 if message.server.id == serverIDDict['Ishana']:
                     mpaMap = MpaMatch.get_class(userstr)
+                    inTesting = True
                     await client.send_file(message.channel, os.path.join('assetsTonk', mpaMap))
                 else:
                     if userstr == ' busterquest':
@@ -393,7 +395,8 @@ async def on_message(message):
                 if not message.channel.id in EQTest:
                     if message.author.top_role.permissions.manage_emojis or message.author.id == OtherIDDict or message.author.top_role.permissions.administrator:
                         try:
-                            await client.send_message(message.channel, f'{message.server.default_role}' + f' {userstr2}')
+                            if inTesting != True:
+                                await client.send_message(message.channel, f'{message.server.default_role}' + f' {userstr2}')
                             EQTest[message.channel.id] = list()
                             SubDict[message.channel.id] = list()
                             ActiveMPA.append(message.channel.id)
@@ -752,6 +755,11 @@ async def on_message(message):
                                 mpaClass = classMatch.findClass(splitstr[1])
                                 classRole += ' ' + classes[mpaClass]
                                 roleAdded[message.channel.id] = True
+                            else:
+                                # As all servers share the same icons, there should always be a "class" added to each string. If there is no class, just use the no class icon.
+                                mpaClass = classMatch.findClass('NoClass')
+                                classRole += ' ' + classes[mpaClass]
+                                roleAdded[message.channel.id] = True
                             for word in EQTest[message.channel.id]:
                                 if isinstance(word, PlaceHolder):
                                     if not(str(splitstr[0]) in EQTest[message.channel.id]):
@@ -929,6 +937,8 @@ async def on_message(message):
                                         playerRemoved[message.channel.id] = True
                                         toBeRemovedName = toBeRemoved.split()
                                         toBeRemovedName2 = toBeRemovedName[1]
+                                        for word in toBeRemovedName2:
+                                            print (word)
                                         await generateList(message, f'```diff\n- Removed {toBeRemovedName2} from the MPA list```')
                                         if len(SubDict[message.channel.id]) > 0:
                                             classRole = classes[10]
