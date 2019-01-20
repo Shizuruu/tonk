@@ -1,0 +1,33 @@
+***Welcome to Tonk!***
+
+This is a quick guide to get you started with setting up Tonk for use in your server.
+
+First, you should check the permissions for the people who you would like to have the permissions to start and manage MPAs.
+For simplicity sake, I will be referring to these people as **MPA Managers** from here on, that includes you too, server administrator.
+
+**Please verify that your MPA Managers have these permissions on their roles**:
+```css
+Manage Emojis
+```
+
+Next, you will want to make sure Tonk has certain permissions for the channel you want to dedicate as the MPA channels. Tonk operates under the condition that the MPA channel will not be used as a conversational channel, but as a separate dedicated channel to hold the list. This means **Tonk can and will delete messages from the channel that you set it to be active on, so please keep any conversations out of the MPA channel if you want to hold onto it for future references.**
+
+**Permissions Tonk needs to function**
+```css
+Manage messages
+Send messages
+Read Text Channels & See Voice Channels
+Read Message History
+```
+
+After you set the permissions up for the channels and MPA managers, you will want to set a channel as an MPA channel. You can set more than one in your server, but please note the condition I stated above.
+
+**Note that users with the Administrator permission can only set/unset MPA channels**
+
+Pick a channel, then type `!enablempachannel`. Tonk will register that as an MPA channel and you will be able to start MPAs from there!
+
+If you change your mind about the channel, then type `!disablempachannel` in the same channel and Tonk will deregister the channel.
+
+Now that you are all set up, type `!help` to learn about the rest of the commands Tonk offers!
+
+Enjoy!
