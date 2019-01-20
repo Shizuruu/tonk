@@ -1,4 +1,0 @@
-`!addme <class>` - Adds yourself to the mpa. The class area represents what class you want to register as. (i.e doing !addme fo will register you as a Force) You do not need to specfify a class if you do not want to.
-`!removeme` - Removes yourself from the MPA.
-`!reserveme` - Adds yourself to the MPA's reserve list. If the MPA becomes full and someone either removes themselves or got removed by a manager you will automatically be placed in.
-`!changeclass <class>` - Changes your class to the class specified. You may also use `none` to remove your class.
