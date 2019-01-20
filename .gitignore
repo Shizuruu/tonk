@@ -1,4 +1,8 @@
 assetsTonk/TonkConfig.json
 assetsTonk/TonkDevConfig.json
+assetsTonk/__pycache__/
+Archived/
 *.png
 *.jpg
+faketonk.py
+*.bak
