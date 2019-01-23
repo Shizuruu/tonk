@@ -1374,6 +1374,7 @@ async def cmd_schedulempa(ctx, requestedTime, message: str = '', mpaType: str = 
 print ('Logging into Discord...\n')
 @client.event
 async def on_ready():
+    FreshStart = False
     connectedServers = 0
     print('Logged in as')
     print(client.user.name)

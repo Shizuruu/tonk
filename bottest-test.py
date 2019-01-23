@@ -158,9 +158,9 @@ async def expiration_checker():
     global mpaWarningCounter
     for key in expirationDate:
         nowTime = int(time.mktime(datetime.now().timetuple()))
-        if (expirationDate[key] - 15) == nowTime:
+        if (expirationDate[key] - 15) == nowTime and mpaRemoved[key] == False:
             await client.get_channel(key).send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `{mpaWarningCounter}` seconds if no actions are taken!** :warning:")
-        if expirationDate[key] == nowTime:
+        if expirationDate[key] == nowTime and mpaRemoved[key] == False:
             print ("Expiration reached")
             await client.get_channel(key).send("!removempa")
 # Background task that ticks every second and will start an mpa if the scheduled time comes
