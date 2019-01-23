@@ -539,63 +539,6 @@ async def cmd_startmpa(ctx, message: str = '', mpaType: str = 'default'):
         await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
         return
     await function_startmpa(ctx, message, mpaType)
-    # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-    #     if ctx.guild.id == serverIDDict['Ishana'] or ctx.guild.id == serverIDDict['SupportServer']:
-    #         mpaMap = MpaMatchDev.get_class(mpaType)
-    #         inTesting = True
-    #         try:
-    #             if mpaMap == 'default':
-    #                 pass
-    #             else:
-    #                 await ctx.send(file=discord.File(os.path.join('assetsTonk', mpaMap)))
-    #         except FileNotFoundError:
-    #             await ctx.send('Unable to find a file with that name! Please check your spelling.')    
-    #             return
-    #     if mpaType == '8man' or mpaType == 'pvp' or mpaType == 'busterquest' or mpaType == 'hachiman':
-    #         eightMan[ctx.channel.id] = True
-    #     else:
-    #         eightMan[ctx.channel.id] = False
-    #     if not ctx.channel.id in EQTest:
-    #         if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
-    #             try:
-    #                 if inTesting:
-    #                     if message != '' and message != '|':
-    #                         await ctx.send(f' {message}')
-    #                     else:
-    #                         pass
-    #                 EQTest[ctx.channel.id] = list()
-    #                 SubDict[ctx.channel.id] = list()
-    #                 ActiveMPA.append(ctx.channel.id)
-    #                 roleAdded[ctx.channel.id] = False
-    #                 guestEnabled[ctx.channel.id] = False
-    #                 playerRemoved[ctx.channel.id] = False
-    #                 participantCount[ctx.channel.id] = 0
-    #                 if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-    #                     expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
-    #                     mpaRemoved[ctx.channel.id] = False
-    #                     print (expirationDate[ctx.channel.id])
-    #                 if eightMan[ctx.channel.id] == True:
-    #                     for index in range(8):
-    #                         EQTest[ctx.channel.id].append(PlaceHolder(""))
-    #                     totalPeople[ctx.channel.id] = 8
-    #                 else:
-    #                     for index in range(12):
-    #                         EQTest[ctx.channel.id].append(PlaceHolder(""))
-    #                     totalPeople[ctx.channel.id] = 12
-    #                 await generateList(ctx, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
-    #                 print (EQTest[ctx.channel.id])
-    #             except discord.Forbidden:
-    #                 print (ctx.author.name + f'Tried to start an MPA at {ctx.guild.name}, but failed.')
-    #                 await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
-    #                 return
-
-    #         else:
-    #             await ctx.send('You do not have the permission to do that, starfox.')
-    #     else:
-    #         await generateList(ctx, '```fix\nThere is already an MPA being made here!```')
-    # else:
-    #     await ctx.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-
 @client.command(name='help')
 async def cmd_help(ctx):
     if ctx.guild.id == serverIDDict["Ishana"] or ctx.guild.id == serverIDDict['SupportServer']:
