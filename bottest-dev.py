@@ -3,7 +3,7 @@
 
 import discord
 import asyncio
-import aiohttp
+#import aiohttp
 import traceback
 import sys
 import os
@@ -13,16 +13,16 @@ import json
 import shlex
 import time
 from datetime import datetime,tzinfo,timedelta
-from random import randint
+#from random import randint
 from discord.utils import find
 from discord.ext import commands
 from assetsTonk import MpaMatchDev
 from assetsTonk import classMatch
 from assetsTonk import tonkHelper
-
 from tendo import singleton
+from pathlib import Path,PurePath,PurePosixPath,PureWindowsPath
 
-# Only allows one instance of the bot running.
+# Only allows one instance of the bot running. Unused for Dev version due to the constant restarting of the bot.
 #me = singleton.SingleInstance()
 
 
@@ -79,7 +79,7 @@ lastRestart = str(datetime.now())
 # Used with MPACount
 ActiveMPA = list()
 # Time in seconds until the MPA auto deletes itself
-mpaExpirationCounter = 20
+mpaExpirationCounter = 3500
 # Time in seconds before the bot warns about inactivity and the deletion notice
 mpaWarningCounter = 15
 # Constants Dictionary
@@ -102,17 +102,18 @@ RoleIDDict = {
 
 
 # Imports Json data for mpaChannels on startup
-mpachannelsJsonFile = open('mpaChannels.json')
-mpachannelsJsonFileRead = mpachannelsJsonFile.read()
-mpaChannels = json.loads(mpachannelsJsonFileRead)
-# Imports Json data for channels configured with auto expiration
-mpaExpirationJsonFile = open('assetsTonk/mpaAutoExpiration.json')
-mpaExpirationJsonFileRead = mpaExpirationJsonFile.read()
-mpaExpirationConfig = json.loads(mpaExpirationJsonFileRead)
-# Imports Json data for MPAs that were scheduled.
-scheduledMpaFile = open('assetsTonk/scheduledMpa.json')
-scheduledMpaFileRead = scheduledMpaFile.read()
-mpaScheduleDict = json.loads(scheduledMpaFileRead)
+# mpachannelsJsonFile = open('assetsTonk/devDB/mpaChannelsDev.json')
+# mpachannelsJsonFileRead = mpachannelsJsonFile.read()
+# mpaChannels = json.loads(mpachannelsJsonFileRead)
+# # Imports Json data for channels configured with auto expiration
+# mpaExpirationJsonFile = open('assetsTonk/devDB/mpaAutoExpirationDev.json')
+# mpaExpirationJsonFileRead = mpaExpirationJsonFile.read()
+# mpaExpirationConfig = json.loads(mpaExpirationJsonFileRead)
+# # Imports Json data for MPAs that were scheduled.
+# scheduledMpaFile = open('assetsTonk/devDB/scheduledMpaDev.json')
+# scheduledMpaFileRead = scheduledMpaFile.read()
+# mpaScheduleDict = json.loads(scheduledMpaFileRead)
+
 
 # Checks used throughout the code
 def is_bot(m):
@@ -129,22 +130,79 @@ def findRoleID(roleName, message):
         return str(result.id)
     else:
         return 0
+
+print ('Loading configuration database...')
+
+# Create dummy dicts
+mpaChannels = {}
+mpaExpirationConfig = {}
+mpaScheduleDict = {}
+mpaBlockConfigDict = {}
+
 # Functions that re-imports the Json Data to the dictionaries
 def loadmpaChannels():
-    mpachannelsJsonFile = open('mpaChannels.json')
+    global mpaChannels
+    mpachannelsJsonFile = open('assetsTonk/devDB/mpaChannelsDev.json')
     mpachannelsJsonFileRead = mpachannelsJsonFile.read()
     mpaChannels = json.loads(mpachannelsJsonFileRead)
-    return
+    print ('MPA Channels database loaded!')
+
 def loadmpaAutoExpiration():
-    mpaExpirationJsonFile = open('assetsTonk/mpaAutoExpiration.json')
+    global mpaExpirationConfig
+    mpaExpirationJsonFile = open('assetsTonk/devDB/mpaAutoExpirationDev.json')
     mpaExpirationJsonFileRead = mpaExpirationJsonFile.read()
     mpaExpirationConfig = json.loads(mpaExpirationJsonFileRead)
-    return
+    print ('MPA Auto expiration configs loaded!')
 
 def loadscheduledMpa():
-    scheduledMpaFile = open('assetsTonk/scheduledMpa.json')
+    global mpaScheduleDict
+    scheduledMpaFile = open('assetsTonk/devDB/scheduledMpaDev.json')
     scheduledMpaFileRead = scheduledMpaFile.read()
     mpaScheduleDict = json.loads(scheduledMpaFileRead)
+    print ('Scheduled MPA Database loaded!')
+
+def loadmpaBlockConfigs():
+    global mpaBlockConfigDict
+    mpaBlockConfigJsonFile = open('assetsTonk/devDB/mpaBlocksdbDev.json')
+    mpaBlockConfigFileRead = mpaBlockConfigJsonFile.read()
+    mpaBlockConfigDict = json.loads(mpaBlockConfigFileRead)
+    print ('MPA block configs loaded!')
+
+# These functions dump the dictionary when something gets written to the dictionary.
+def dumpMpaChannels(dictdata):
+    with open('assetsTonk/devDB/mpaChannelsDev.json', 'w') as fp:
+        json.dump(dictdata, fp)
+    fp.close()
+    loadmpaChannels()
+    return
+def dumpMpaAutoExpiration(dictdata):
+    with open("assetsTonk/devDB/mpaAutoExpirationDev.json", 'w') as fp:
+        json.dump(mpaExpirationConfig, fp)
+    fp.close()
+    loadmpaAutoExpiration()
+    return
+def dumpScheduledMpa(dictdata):
+    with open('assetsTonk/devDB/scheduledMpaDev.json', 'w') as fp:
+        json.dump(mpaScheduleDict, fp)
+    fp.close()
+    return
+def dumpMpaBlockConfig(dictdata):
+    with open("assetsTonk/devDB/mpaBlocksdbDev.json", 'w') as fp:
+        json.dump(mpaBlockConfigDict, fp)
+    fp.close()
+    loadmpaBlockConfigs()
+    return
+
+# Reloads all the data files.
+def runDataLoadup():
+    print ('Running data loadup!')
+    loadmpaChannels()
+    loadmpaAutoExpiration()
+    loadscheduledMpa()
+    loadmpaBlockConfigs()
+
+# Run the data load on startup
+runDataLoadup()
 
 # Reads the API key from the config json file.
 KeyFile = open('assetsTonk/TonkDevConfig.json')
@@ -205,9 +263,7 @@ async def mpa_schedulerclock():
             await client.get_channel(key).send(f"!startmpa {mpaScheduleDict[key]['arguments']}")
             del mpaScheduleDict[key]
             try:
-                with open('assetsTonk/scheduledMpa.json', 'w') as fp:
-                    json.dump(mpaScheduleDict, fp)
-                    fp.close()
+                dumpScheduledMpa(mpaScheduleDict)
                 return
             except Exception as e:
                 print ('An error occurred while trying to automatically dump the mpaschedule dict to JSON')
@@ -217,9 +273,7 @@ async def mpa_schedulerclock():
             await client.get_channel(key).send('You know there was supposed to be an MPA scheduled for now but there is already an MPA here! Ignoring the scheduled MPA..')
             del mpaScheduleDict[key]
             try:
-                with open('assetsTonk/scheduledMpa.json', 'w') as fp:
-                    json.dump(mpaScheduleDict, fp)
-                    fp.close()
+                dumpScheduledMpa(mpaScheduleDict)
                 return
             except Exception as e:
                 print ('An error occurred while trying to automatically dump the mpaschedule dict to JSON')
@@ -237,6 +291,7 @@ async def generateList(message, inputstring):
     classlist = '\n'
     playerlist = '\n'
     splitstr = ''
+    hasAnMPABlock = False
     # Servers with a class.
     for word in EQTest[message.channel.id]:
         if (type(word) is PlaceHolder):
@@ -281,7 +336,11 @@ async def generateList(message, inputstring):
         playerlist += ('\n**Reserve List**:\n')
         for word in SubDict[message.channel.id]:
             playerlist += (str(sCount) + ". " + word + '\n')
-            sCount += 1  
+            sCount += 1 
+
+    if str(message.guild.id) in mpaBlockConfigDict:
+        mpaBlockNumber = mpaBlockConfigDict[str(message.guild.id)]
+        hasAnMPABlock = True
             
     if guestEnabled[message.channel.id] == True:
         mpaFriendly = 'Yes'
@@ -289,8 +348,10 @@ async def generateList(message, inputstring):
         mpaFriendly = 'No'
         
     em = discord.Embed(description='Use `!addme` to sign up \nOptionally you can add your class after addme. Example. `!addme br` \nUse `!removeme` to remove yourself from the mpa \nIf the MPA list is full, signing up will put you in the reserve list.', colour=color[message.channel.id])
-    if message.guild.id == serverIDDict['Ishana']:
-        em.add_field(name='Meeting at', value='`' + 'Block 03`', inline=True)
+    # if message.guild.id == serverIDDict['Ishana']:
+    #     em.add_field(name='Meeting at', value='`' + 'Block 03`', inline=True)
+    if hasAnMPABlock == True:
+        em.add_field(name='Meeting at', value=f'`Block {mpaBlockNumber}`', inline=True)
     if message.guild.id == serverIDDict['Ishana']:
         em.add_field(name='Party Status', value='`' + str(participantCount[message.channel.id]) + '/' + str(totalPeople[message.channel.id]) + '`', inline=True)
     else:
@@ -438,6 +499,7 @@ async def on_message(message):
             if message.author == client.user:
                 splitcmd = shlex.split(f'{message.content}')
                 await function_startmpa(message, splitcmd[1], splitcmd[2])
+                await message.delete()
         await client.process_commands(message)
 
 
@@ -502,7 +564,7 @@ async def function_startmpa(message, broadcast, mpaType):
                     pass
                 else:
                     await message.channel.send(file=discord.File(os.path.join('assetsTonk', mpaMap)))
-            except FileNotFoundError:
+            except FileNotFoundError as e:
                 await message.channel.send('Unable to find a file with that name! Please check your spelling.')    
                 return
         if mpaType == '8man' or mpaType == 'pvp' or mpaType == 'busterquest' or mpaType == 'hachiman':
@@ -598,6 +660,7 @@ async def cmd_removempa(ctx):
 # Adds the user into the EQ list in the EQ channel. Optionally takes a class as an arguement. If one is passed, add the class icon and the user's name into the EQ list.
 @client.command(name='addme', aliases=['reserveme'])
 async def cmd_addme(ctx, mpaArg: str = 'none'):
+    global appended
     bypassCheck = False
     classRole = ''
     index = 0
@@ -620,7 +683,7 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
             else:
                 bypassCheck = True
         if (bypassCheck == False and guestEnabled[ctx.channel.id] == False):
-            await generateList(ctx, '```fix\nGuests are not allowed to join this MPA.```')
+            await generateList(ctx.message, '```fix\nGuests are not allowed to join this MPA.```')
             await ctx.message.delete()
             return
         else:
@@ -640,15 +703,15 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                 roleAdded[ctx.channel.id] = True
                 if mpaArg == 'reserve' or 'reserveme' in ctx.message.content:
                     if personInMPA == False: 
-                        await generateList(ctx, "```fix\nReserve list requested. Adding...```")
+                        await generateList(ctx.message, "```fix\nReserve list requested. Adding...```")
                         await ctx.message.delete()
                         if personInReserve == False:
                             SubDict[ctx.channel.id].append(ctx.message.author.name)
-                            await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the Reserve list```')
+                            await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the Reserve list```')
                         else:
-                            await generateList(ctx, "```diff\n+ You are already in the Reserve List```")
+                            await generateList(ctx.message, "```diff\n+ You are already in the Reserve List```")
                     else:
-                        await generateList(ctx, "```fix\nYou are already in the MPA```")
+                        await generateList(ctx.message, "```fix\nYou are already in the MPA```")
                         await ctx.message.delete()
                     return
                 if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
@@ -656,7 +719,6 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                     print (expirationDate[ctx.channel.id])
                 await ctx.message.delete()
                 for word in EQTest[ctx.channel.id]:
-                    appended = False
                     if isinstance(word, PlaceHolder):
                         if personInMPA == False:
                             if (ctx.author.name in SubDict[ctx.channel.id]):
@@ -665,56 +727,56 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                                     EQTest[ctx.channel.id].pop(0)
                                     EQTest[ctx.channel.id][0] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][1], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(1)
                                     EQTest[ctx.channel.id][1] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][2], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(2)
                                     EQTest[ctx.channel.id][2] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][3], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(3)
                                     EQTest[ctx.channel.id][3] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][4], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(4)
                                     EQTest[ctx.channel.id][4] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][5], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(5)
                                     EQTest[ctx.channel.id][5] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][6], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(6)
                                     EQTest[ctx.channel.id][6] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][7], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(7)
                                     EQTest[ctx.channel.id][7] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                     appended = True
                                     break
                                 if eightMan[ctx.channel.id] == False:
@@ -722,28 +784,28 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                                         EQTest[ctx.channel.id].pop(8)
                                         EQTest[ctx.channel.id][8] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][9], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(9)
                                         EQTest[ctx.channel.id][9] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][10], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(10)
                                         EQTest[ctx.channel.id][10] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][11], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(11)
                                         EQTest[ctx.channel.id][11] = classRole + ' ' + SubDict[ctx.channel.id].pop(index) 
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} from the reserves to the MPA list.```')
                                         appended = True
                                         break
                             else:
@@ -751,56 +813,56 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                                     EQTest[ctx.channel.id].pop(0)
                                     EQTest[ctx.channel.id].insert(0, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][1], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(1)
                                     EQTest[ctx.channel.id].insert(1, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][2], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(2)
                                     EQTest[ctx.channel.id].insert(2, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][3], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(3)
                                     EQTest[ctx.channel.id].insert(3, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][4], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(4)
                                     EQTest[ctx.channel.id].insert(4, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][5], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(5)
                                     EQTest[ctx.channel.id].insert(5, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][6], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(6)
                                     EQTest[ctx.channel.id].insert(6, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][7], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(7)
                                     EQTest[ctx.channel.id].insert(7, classRole + ' ' + ctx.author.name)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                     appended = True
                                     break
                                 if eightMan[ctx.channel.id] == False:
@@ -808,44 +870,44 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                                         EQTest[ctx.channel.id].pop(8)
                                         EQTest[ctx.channel.id].insert(8, classRole + ' ' + ctx.author.name)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][9], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(9)
                                         EQTest[ctx.channel.id].insert(9, classRole + ' ' + ctx.author.name)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][10], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(10)
                                         EQTest[ctx.channel.id].insert(10, classRole + ' ' + ctx.author.name)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][11], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(11)
                                         EQTest[ctx.channel.id].insert(11, classRole + ' ' + ctx.author.name)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the MPA list```')
                                         appended = True
                                         break
                         else:
-                            await generateList(ctx, "```fix\nYou are already in the MPA```")
+                            await generateList(ctx.message, "```fix\nYou are already in the MPA```")
                             roleAdded[ctx.channel.id] = False
                             break
-                    if not appended:
-                        if personInMPA == False: 
-                            await generateList(ctx, "```css\nThe MPA is full. Adding to reserve list.```")
-                            if personInReserve == False:
-                                SubDict[ctx.channel.id].append(ctx.author.name)
-                                await generateList(ctx, f'```diff\n+ Added {ctx.author.name} to the Reserve list```')
-                            else:
-                                await generateList(ctx, "```css\nYou are already in the Reserve List```")
+                if not appended:
+                    if personInMPA == False: 
+                        await generateList(ctx.message, "```css\nThe MPA is full. Adding to reserve list.```")
+                        if personInReserve == False:
+                            SubDict[ctx.channel.id].append(ctx.author.name)
+                            await generateList(ctx.message, f'```diff\n+ Added {ctx.author.name} to the Reserve list```')
                         else:
-                            await generateList(ctx, "```css\nYou are already in the MPA```")
+                            await generateList(ctx.message, "```css\nYou are already in the Reserve List```")
+                    else:
+                        await generateList(ctx.message, "```css\nYou are already in the MPA```")
                 appended = False     
             else:
                 await ctx.send('There is no MPA to add yourself to!')
@@ -855,13 +917,13 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
 # Manager command that adds a custom name to the MPA.
 @client.command(name='add', aliases=['reserve'])
 async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
+    global appended
     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.guild.id == serverIDDict['RappyCasino'] or ctx.author.top_role.permissions.administrator:
         classRole = ''
-        appended = False
         if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
             if ctx.channel.id in EQTest:
                 if user == "":
-                    await generateList(ctx, "```fix\nYou can't add nobody. Are you drunk?```")
+                    await generateList(ctx.message, "```fix\nYou can't add nobody. Are you drunk?```")
                     appended = True
                 else:
                     if mpaArg != 'none':
@@ -875,14 +937,14 @@ async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
                         roleAdded[ctx.channel.id] = True
                     if mpaArg == 'reserve' or 'reserve' in ctx.message.content:
                         if not user in EQTest[ctx.channel.id]: 
-                            await generateList(ctx, "```fix\nReserve list requested. Adding...```")
+                            await generateList(ctx.message, "```fix\nReserve list requested. Adding...```")
                             if not user in SubDict[ctx.channel.id]:
                                 SubDict[ctx.channel.id].append(user)
-                                await generateList(ctx, f'```diff\n+ Added {user} to the Reserve list```')
+                                await generateList(ctx.message, f'```diff\n+ Added {user} to the Reserve list```')
                             else:
-                                await generateList(ctx, "```diff\n+ That user is already in the Reserve List```")
+                                await generateList(ctx.message, "```diff\n+ That user is already in the Reserve List```")
                         else:
-                            await generateList(ctx, "```fix\nThat user is already in the MPA```")
+                            await generateList(ctx.message, "```fix\nThat user is already in the MPA```")
                         return
                     if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
                         expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
@@ -893,56 +955,56 @@ async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
                                     EQTest[ctx.channel.id].pop(0)
                                     EQTest[ctx.channel.id].insert(0, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][1], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(1)
                                     EQTest[ctx.channel.id].insert(1, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][2], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(2)
                                     EQTest[ctx.channel.id].insert(2, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][3], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(3)
                                     EQTest[ctx.channel.id].insert(3, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][4], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(4)
                                     EQTest[ctx.channel.id].insert(4, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][5], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(5)
                                     EQTest[ctx.channel.id].insert(5, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][6], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(6)
                                     EQTest[ctx.channel.id].insert(6, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 elif isinstance(EQTest[ctx.channel.id][7], PlaceHolder):
                                     EQTest[ctx.channel.id].pop(7)
                                     EQTest[ctx.channel.id].insert(7, classRole + ' ' + user)
                                     participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                    await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                     appended = True
                                     break
                                 if eightMan[ctx.channel.id] == False:    
@@ -950,42 +1012,42 @@ async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
                                         EQTest[ctx.channel.id].pop(8)
                                         EQTest[ctx.channel.id].insert(8, classRole + ' ' + user)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][9], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(9)
                                         EQTest[ctx.channel.id].insert(9, classRole + ' ' + user)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][10], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(10)
                                         EQTest[ctx.channel.id].insert(10, classRole + ' ' + user)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                         appended = True
                                         break
                                     elif isinstance(EQTest[ctx.channel.id][11], PlaceHolder):
                                         EQTest[ctx.channel.id].pop(11)
                                         EQTest[ctx.channel.id].insert(11, classRole + ' ' + user)
                                         participantCount[ctx.channel.id] += 1
-                                        await generateList(ctx, f'```diff\n+ Added {user} to the MPA list```')
+                                        await generateList(ctx.message, f'```diff\n+ Added {user} to the MPA list```')
                                         appended = True
                                         break
-                            if not appended:
-                                await generateList(ctx, "```css\nThe MPA is full. Adding to reserve list.```")
-                                SubDict[ctx.channel.id].append(user)
-                                await generateList(ctx, f'```diff\n+ Added {user} to the Reserve list```')
+                if not appended:
+                    await generateList(ctx.message, "```css\nThe MPA is full. Adding to reserve list.```")
+                    SubDict[ctx.channel.id].append(user)
+                    await generateList(ctx.message, f'```diff\n+ Added {user} to the Reserve list```')
             else:
                 await ctx.send('There is no MPA.')
+            await ctx.message.delete()
         else:
             await ctx.send('This command can only be used in a MPA channel!')
     else:
         await ctx.send("You don't have permissions to use this command")
     appended = False
-    await ctx.message.delete()
 
 # Removes the caller from the MPA.
 @client.command(name='removeme')
@@ -1140,10 +1202,7 @@ async def cmd_enablempachannel(ctx):
             mpaChannels[str(ctx.guild.id)] = []
             mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
         try:
-            with open('mpaChannels.json', 'w') as fp:
-                json.dump(mpaChannels, fp)
-            fp.close()
-            loadmpaChannels()
+            dumpMpaChannels(mpaChannels)
             print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
             await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
         except:
@@ -1156,11 +1215,8 @@ async def cmd_enablempachannel(ctx):
             print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
             mpaExpirationConfig[str(ctx.guild.id)] = []
         try:
-            with open("assetsTonk/mpaAutoExpiration.json", 'w') as fp:
-                json.dump(mpaExpirationConfig, fp)
-                fp.close()
-                loadmpaAutoExpiration()
-                return
+            dumpMpaAutoExpiration(mpaExpirationConfig)
+            return
         except Exception as e:
             await ctx.send('An internal error occurred.')
             print (e)
@@ -1178,10 +1234,7 @@ async def cmd_disablempachannel(ctx):
                     if ctx.channel.id == item:
                         mpaChannels[str(ctx.guild.id)].pop(index)
                         try:
-                            with open('mpaChannels.json', 'w') as fp:
-                                json.dump(mpaChannels, fp)
-                            fp.close()
-                            loadmpaChannels()
+                            dumpMpaChannels(mpaChannels)
                             channel = client.get_channel(item)
                             await ctx.send(f'Removed channel {ctx.channel.mention} from the MPA channels list.')
                             break
@@ -1199,10 +1252,7 @@ async def cmd_disablempachannel(ctx):
                 if ctx.channel.id == item:
                     mpaExpirationConfig[str(ctx.guild.id)].pop(index)
                     try:
-                        with open('assetsTonk/mpaAutoExpiration.json', 'w') as fp:
-                            json.dump(mpaExpirationConfig, fp)
-                        fp.close()
-                        loadmpaAutoExpiration()
+                        dumpMpaAutoExpiration(mpaExpirationConfig)
                         channel = client.get_channel(item)
                         return
                     except Exception as e:
@@ -1211,6 +1261,51 @@ async def cmd_disablempachannel(ctx):
             await ctx.send('Error removing the channel.')
             print (e)
     return
+
+# This sets the value for the "Meeting in" section of the MPA list.
+@client.command(name='setmpablock')
+async def cmd_setmpablock(ctx, blockNumber):
+    if ctx.author.top_role.permissions.administrator:
+        try:
+            if len(blockNumber) < 32:
+                mpaBlockNumber = int(blockNumber)
+            else:
+                await ctx.send('That number is too big! Please try again with a smaller number!')
+                return
+        except ValueError:
+            if blockNumber.lower() == 'clear':
+                mpaBlockNumber = 99999999999999999999999999999999
+                pass
+            else:
+                await ctx.send('Please provide just the number!')
+                return
+        try: 
+            if mpaBlockNumber == mpaBlockConfigDict[str(ctx.guild.id)]:
+                await ctx.send(f'This server is already set for block {mpaBlockNumber}!')
+                return
+            elif blockNumber.lower() == 'clear' and mpaBlockNumber == 99999999999999999999999999999999:
+                del mpaBlockConfigDict[str(ctx.guild.id)]
+                await ctx.send('Successfully removed the block from the MPA configuration.')
+            else:
+                mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
+        except KeyError:
+            print (f'{ctx.guild.id} is not in the dictionary. Adding that in..')
+            if blockNumber.lower() == 'clear':
+                await ctx.send("You can't just clear nothign, are you drunk?")
+                return
+            else:
+                mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
+        try:
+            dumpMpaBlockConfig(mpaBlockConfigDict)
+            if blockNumber.lower() != 'clear':
+                print (f"{ctx.author.name} has set {ctx.guild.name}'s block number to {mpaBlockNumber}.")
+                await ctx.send(f'Set the server block to {mpaBlockNumber}')
+            return
+        except Exception as e:
+            print (e)
+            await ctx.send('Something went wrong! AAAAA')
+            return
+
 
 # Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
 @client.command(name='enablempaexpiration')
@@ -1227,12 +1322,9 @@ async def cmd_enablempaexpiration(ctx):
             mpaExpirationConfig[str(ctx.guild.id)] = []
             mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
         try:
-            with open("assetsTonk/mpaAutoExpiration.json", 'w') as fp:
-                json.dump(mpaExpirationConfig, fp)
-                fp.close()
-                loadmpaAutoExpiration()
-                print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
-                await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
+            dumpMpaAutoExpiration(mpaExpirationConfig)
+            print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
+            await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
         except Exception as e:
             await ctx.send('Error enabling the channel.')
             print (e)
@@ -1249,10 +1341,7 @@ async def cmd_disablempaexpiration(ctx):
                     if ctx.channel.id == item:
                         mpaExpirationConfig[str(ctx.guild.id)].pop(index)
                         try:
-                            with open('assetsTonk/mpaAutoExpiration.json', 'w') as fp:
-                                json.dump(mpaExpirationConfig, fp)
-                            fp.close()
-                            loadmpaAutoExpiration()
+                            dumpMpaAutoExpiration(mpaExpirationConfig)
                             channel = client.get_channel(item)
                             await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
                             return
@@ -1357,10 +1446,8 @@ async def cmd_schedulempa(ctx, requestedTime, message: str = '', mpaType: str = 
                 mpaScheduleDict[ctx.channel.id]['scheduledTime'] = scheduledTime
                 mpaScheduleDict[ctx.channel.id]['arguments'] = f'{message} {mpaType}'
             try:
-                with open('assetsTonk/scheduledMpa.json', 'w') as fp:
-                    json.dump(mpaScheduleDict, fp)
-                    fp.close()
-                    await ctx.send(f'Scheduled an MPA `{timeNumber} {timestat}` from now')
+                dumpScheduledMpa(mpaScheduleDict)
+                await ctx.send(f'Scheduled an MPA `{timeNumber} {timestat}` from now')
                 return
             except Exception as e:
                 await ctx.send('Error scheduling the MPA. Please see error in console')
