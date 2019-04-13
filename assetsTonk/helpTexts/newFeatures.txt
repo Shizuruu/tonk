@@ -1,0 +1,16 @@
+:large_blue_circle:  **Large upcoming update ahead!** :large_blue_circle:
+
+*message from Tenj, a random person who writes this bot*
+Hey there,
+
+Tonk will be getting a bunch of updates in the next coming weeks, and a number of them will change the way you normally use the bot. I tried to keep things as same as possible to the old experience you are used to but due to a lot of backend changes I made in the code to allow for more better features, I had to change some of the ways a command will be used. 
+
+Here are some highlights on the new update:
+
+:large_blue_diamond:  **Changes to the channel name requirement**
+Starting with the next update, **You will no longer need to have the tag "mpa" in the channel name anymore.** Instead, channels can be "activated" and "deactivated" with a simple command. This gives you more flexibility with your channel naming scheme, and you no longer have to work around this whole mpa-<name> requirement in your channel.
+
+:large_orange_diamond:  **!startmpa changes**
+!startmpa has recieved a formatting change. Instead of doing `!startmpa <message>`, the format to start an mpa has changed to `!startmpa "<message>" <type>`
+**Note the quotation marks surrounding the <message> tag in the new format!** This allows spaces and special characters to be used in your messages while also keeping the MPA type! 
+You may wonder, what is the <type> tag? Well, in the old format, if you knew this or not, there is a 8 player format for buster quests and any other quests that only took 8 players instead of 12. To use it, you would have to type `!startmpa busterquest` or `!startmpa 8man` to get it to format that way, but to type out a special message in the MPA list you had to go through a prompt. Instead, that's removed and wrapping your message in quotes then putting the type allows the MPA to be properly formatted and contain your message in one command.
