@@ -1,0 +1,22 @@
+**Example Usage:** `!startmpa "I don't wanna be a lawyer" 8man` 
+This will start an 8 player MPA with the message "I don't wanna be a lawyer"
+
+Note that you need to format your message with a quote in it. Otherwise, the bot will ignore anything past the first word and just fire the MPA away with the first word you said.
+
+:small_red_triangle: **MPA Auto expiration**
+Tired of removing MPAs after your MPA concludes? No need to worry anymore! With this **toggleable** feature, MPAs that don't get any action after a set amount of time (90 minutes currently) will have the MPA automatically closed. Doing anything (adding/removing/reserving/etc.) will reset the timer.
+
+Again, this is a toggleable feature, and is turned off for your channel by default.
+
+:small_red_triangle_down: **The ability to schedule an MPA**
+Want to start an MPA but not sure you or someone else will make it in time to start that list? No worries! You can now schedule an MPA with a new command and the MPA will be created at the time you set. More on that soon.
+
+
+This is most of the new features being worked on, but not exactly all of them. I recommend running the `!help` command when the new update comes out to see everything that it incorporated in the new release.
+
+Oh yeah, if you have or currently run into questions and don't know who to ask, I finally got a server running where you can contact me directly for help. You can find me at https://discord.gg/7QttYRd
+I also post updates, announcements and any other useful/useless information about the bot in that server.
+
+Personally, this is an exciting update for me as it finally removes a lot of the old garbage that was in the bot's code from when I first started working on this bot. I hope you find the changes to be exciting to use as well.
+
+Until then.

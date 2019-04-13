@@ -6,28 +6,28 @@ import traceback
 client = discord.Client()
 
 # Imports the text files that contain the help text.
-with open ("assetsTonk/helpCommands.txt") as userFile:
+with open ("assetsTonk/helpTexts/helpCommands.txt") as userFile:
     userCommands = userFile.read()
-with open ("assetsTonk/managerCommands.txt") as managerFile:
+with open ("assetsTonk/helpTexts/managerCommands.txt") as managerFile:
     managerCommands = managerFile.read()
-with open ("assetsTonk/adminCommands.txt") as adminFile:
+with open ("assetsTonk/helpTexts/adminCommands.txt") as adminFile:
     adminCommands = adminFile.read()
-with open ("assetsTonk/gettingStartedHelp.txt") as gettingStartedFile:
+with open ("assetsTonk/helpTexts/gettingStartedHelp.txt") as gettingStartedFile:
     gettingStartedHelp = gettingStartedFile.read()
-with open ("assetsTonk/ishanaExtra.txt") as ishanaExtraFile:
+with open ("assetsTonk/helpTexts/ishanaExtra.txt") as ishanaExtraFile:
     ishanaExtra = ishanaExtraFile.read()
 
 
 def reloadFiles():
-    with open ("assetsTonk/helpCommands.txt") as userFile:
+    with open ("assetsTonk/helpTexts/helpCommands.txt") as userFile:
         userCommands = userFile.read()
-    with open ("assetsTonk/managerCommands.txt") as managerFile:
+    with open ("assetsTonk/helpTexts/managerCommands.txt") as managerFile:
         managerCommands = managerFile.read()
-    with open ("assetsTonk/adminCommands.txt") as adminFile:
+    with open ("assetsTonk/helpTexts/adminCommands.txt") as adminFile:
         adminCommands = adminFile.read()
-    with open ("assetsTonk/gettingStartedHelp.txt") as gettingStartedFile:
+    with open ("assetsTonk/helpTexts/gettingStartedHelp.txt") as gettingStartedFile:
         gettingStartedHelp = gettingStartedFile.read()
-    with open ("assetsTonk/ishanaExtra.txt") as ishanaExtraFile:
+    with open ("assetsTonk/helpTexts/ishanaExtra.txt") as ishanaExtraFile:
         ishanaExtra = ishanaExtraFile.read()
 
 supportServerInvite='https://discord.gg/7QttYRd'

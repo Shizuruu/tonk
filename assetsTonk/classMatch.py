@@ -21,8 +21,10 @@ def findClass(userstring):
         return 8
     elif userstring.lower() == 'hr' or userstring.lower() == 'hero':
         return 9
-    else:
+    elif userstring.lower() == 'ph' or userstring.lower() == 'phantom':
         return 10
+    else:
+        return 11
 
 def findClassName(classID):
     if classID == 0:
@@ -46,4 +48,6 @@ def findClassName(classID):
     elif classID == 9:
         return "Hero"
     elif classID == 10:
+        return "Phantom"
+    elif classID == 11:
         return "None"

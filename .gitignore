@@ -11,3 +11,6 @@ faketonk.py
 *.bak
 *mpa*.json
 .idea/
+assetsTonk/jsonDB/
+assetsTonk/configs/
+assetsTonk/devDB/
