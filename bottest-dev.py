@@ -70,8 +70,7 @@ mpaRemoved = {}
 # Internal flag
 appended = False
 
-dynamodb = boto3.resource('dynamodb', region_name=f"{ConfigDict['DB-REGION']}")
-configTable = dynamodb.Table(f"{ConfigDict['DB-NAME']}")
+
 
 # myID = "16541569465146"
 
@@ -1435,7 +1434,15 @@ async def cmd_enablempachannel(ctx):
 @client.command(name='disablempachannel')
 async def cmd_disablempachannel(ctx):
     if ctx.author.top_role.permissions.administrator:
-        
+        dbQuery = configTable.query(KeyConditionExpression=Key('guildID').eq(f'{ctx.guild.id}'))
+        try:
+            if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaChannels']):
+                for item in dbQuery['Items'][0]['mpaChannels']:
+                    if str(ctx.channel.id) == str(item):
+                        removeMpaChannel(ctx.guild.id, ctx.channel.id)
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            return
     #     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
     #         try:
     #             for index, item in enumerate(mpaChannels[str(ctx.guild.id)]):
