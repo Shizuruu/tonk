@@ -26,35 +26,26 @@ def get_class(userstring):
         return 'Season_Quest.jpg'
     elif userstring == 'pvp':
         return 'PvP.jpg'
-    elif userstring == 'bosterqoest':
-        return 'Boster_Qoest.jpg'
     elif userstring == 'busterquest':
         return 'Buster_Quest.png'
-    elif userstring == 'dargon':
-        return 'erythron-dargon.jpg'
     elif userstring == 'dragon':
-        return 'erythron-dragon.png'
+        return 'Erythron-Dragon.png'
     elif userstring == 'cm':
         return 'Challenge_Mode.jpg'
-    elif userstring == 'owinner' or userstring == 'omegawinner':
-        return 'owinner.jpg'
     elif userstring == 'oloser' or userstring == 'omegaloser':
         return 'oloser.png'
     elif userstring == 'test':
         return 'test.png'
     elif userstring == 'goc':
         return 'GOC.png'
-    elif userstring == 'oapprentoce':
-        return 'oapprentoce.jpg'
     elif userstring == 'oapprentice':
         return 'oapprentice.png'
     elif userstring == 'persona':
-        return 'persona.png'
-    elif userstring == 'perusona':
-        return 'realpersona.jpg'
+        return 'persona.jpg'
     elif userstring == '8man' or userstring == 'hachiman':
         return '8_man_eq.png'
     elif userstring == '12man':
         return '12_man_eq.png'
     else:
         return 'default'
+

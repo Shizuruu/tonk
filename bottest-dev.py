@@ -3,7 +3,6 @@
 
 import discord
 import asyncio
-#import aiohttp
 import traceback
 import sys
 import os
@@ -12,17 +11,14 @@ import datetime
 import json
 import shlex
 import time
-from datetime import datetime,tzinfo,timedelta
-#from random import randint
+import boto3
+from boto3.dynamodb.conditions import Key
+from datetime import datetime
 from discord.utils import find
 from discord.ext import commands
 from assetsTonk import MpaMatchDev
 from assetsTonk import classMatch
 from assetsTonk import tonkHelper
-from tendo import singleton
-
-# Only allows one instance of the bot running. Unused for Dev version due to the constant restarting of the bot.
-#me = singleton.SingleInstance(
 
 class FakeMember():
     def __init__(self, name):
@@ -35,6 +31,12 @@ class PlaceHolder():
         return str(self.name)
 # These are all the constants that will be used throughout the bot. Most if not all of these are dictionaries that allow for different settings per server/channel to be used.
 print ('Beginning bot startup process...\n')
+
+# Reads the config file and load it into memory
+ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+ConfigDict = json.loads(ConfigFile.read())
+APIKey = ConfigDict['APIKEY']
+
 start = time.time()
 # Main ist to track the actual MPA list
 EQTest = {}
@@ -68,7 +70,40 @@ mpaRemoved = {}
 # Internal flag
 appended = False
 
-commandPrefix = '!'
+dynamodb = boto3.resource('dynamodb', region_name=f"{ConfigDict['DB-REGION']}")
+configTable = dynamodb.Table(f"{ConfigDict['DB-NAME']}")
+
+# myID = "16541569465146"
+
+# 
+# table.put_item(
+#     Item={
+#         'guildID': f"{myID}",
+#         'mpaChannels': ["410626108917284864", "578234578184044565"],
+#         'mpaAutoExpiration': ["0"],
+#         'mpaBlocksdb': "222"
+#     }
+# )
+
+#table.update_item(
+#    Key={
+#        'guildID': f"{myID}"
+#    },
+#    UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel)",
+#    ExpressionAttributeValues={
+#        ':newmpachannel': ["21031030123"]
+#    }
+#)
+
+#resp = table.query(KeyConditionExpression=Key('guildID').eq(f'{myID}'))
+
+#print("The query returned the following items:")
+#for item in resp['Items']:
+#    print(item)
+#    print(list(item['mpaChannels'])[0])
+
+#sys.exit(0)
+commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
 client = commands.Bot(command_prefix=commandPrefix)
 # Remove the default help command
 client.remove_command('help')
@@ -96,6 +131,7 @@ OtherIDDict = {
 RoleIDDict = {
 "IshanaFamilia": 486809791948259328
 }
+
 
 
 # Checks used throughout the code
@@ -184,14 +220,67 @@ def runDataLoadup():
     loadscheduledMpa()
     loadmpaBlockConfigs()
 
+def updateMpaChannels(guildID, newChannelID):
+    configTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel)",
+        ExpressionAttributeValues={
+            ':newmpachannel': [f"{newChannelID}"]
+        }
+    )
+    return
+# This function should only be used when the server has no MPA channels whatsoever.
+# The function is also used if the server does not already exist in the database.
+def addMpaChannel(guildID, newChannelID):
+    configTable.put_item(
+        Item={
+            'guildID': f"{guildID}",
+            'mpaChannels': [f"{newChannelID}"],
+            'mpaAutoExpirationChannels': [f"{newChannelID}"]
+        }
+    )
+    return
+
+def updateMpaAutoExpirationChannels(guildID, newChannelID, dbQuery):
+    try:
+        if len(dbQuery['Items'][0]['mpaAutoExpirationChannels']) > 0:   
+            configTable.update_item(
+            Key={
+                'guildID': f"{guildID}"
+            },
+            UpdateExpression="SET mpaAutoExpirationChannels = list_append(mpaAutoExpirationChannels, :newmpachannel)",
+            ExpressionAttributeValues={
+                ':newmpachannel': [f"{newChannelID}"]
+            }
+            )
+    except KeyError:
+            configTable.update_item(
+            Key={
+                'guildID': f"{guildID}"
+            },
+            UpdateExpression="SET mpaAutoExpirationChannels = if_not_exists(mpaAutoExpirationChannels, :newmpachannel)",
+            ExpressionAttributeValues={
+                ':newmpachannel': [f"{newChannelID}"]
+            }
+            )
+    return
+
+
+# def addMpaAutoExpirationChannel(guildID, newChannelID):
+#     configTable.put_item(
+#         Item={
+#             'guildID': f"{guildID}",
+#             'mpaAutoExpirationChannels': [f"{newChannelID}"]
+#         }
+#     )
+#     return
+
 # Run the data load on startup
 runDataLoadup()
 
-# Reads the API key from the config json file.
-KeyFile = open('assetsTonk/configs/TonkDevConfig.json')
-KeyRead = KeyFile.read()
-KeyDict = json.loads(KeyRead)
-Key = KeyDict['APIKEY']
+
 
 print ('Loading classes list...\n')  
   
@@ -200,6 +289,20 @@ with open("assetsTonk/iconLists/classes.txt",'r') as e:
     classes = []
     for i in classesread:
         classes.append(i.strip())
+        print (i.strip())
+
+with open("assetsTonk/iconLists/heroClasses.txt",'r') as e:
+    classesread = e.readlines()
+    heroClasses = []
+    for i in classesread:
+        heroClasses.append(i.strip())
+        print (i.strip())
+
+with open("assetsTonk/iconLists/subbableheroClasses.txt",'r') as e:
+    classesread = e.readlines()
+    subbableHeroClasses = []
+    for i in classesread:
+        subbableHeroClasses.append(i.strip())
         print (i.strip())
 
 BlankMpaClass = classMatch.findClass('NoneAtAll')
@@ -230,7 +333,7 @@ async def expiration_checker():
             await client.get_channel(key).send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `{mpaWarningCounter}` seconds if no actions are taken!** :warning:")
         if expirationDate[key] == nowTime and mpaRemoved[key] == False:
             print ("Expiration reached")
-            await client.get_channel(key).send("!removempa")
+            await client.get_channel(key).send(f"{command_prefix}removempa")
             mpaRemoved[key] = False
 
 # Background task that ticks every second and will start an mpa if the scheduled time comes
@@ -245,7 +348,7 @@ async def mpa_schedulerclock():
         except KeyError:
             pass
         if mpaScheduleDict[key]['scheduledTime'] <= nowTime and alreadyHasMPA == False:
-            await client.get_channel(key).send(f"!startmpa {mpaScheduleDict[key]['arguments']}")
+            await client.get_channel(key).send(f"{command_prefix}startmpa {mpaScheduleDict[key]['arguments']}")
             del mpaScheduleDict[key]
             try:
                 dumpScheduledMpa(mpaScheduleDict)
@@ -299,20 +402,8 @@ async def generateList(message, inputstring):
                     playerRemoved[message.channel.id] = False
                 else:
                     player = splitstr[1]
-                #if len(splitstr) > 2:
-                #    for index in range(len(splitstr)):
-                #        if index == 0 or index == 1:
-                #            pass
-                #        else:
-                #            player+= splitstr[index] + ' '
             else:
                 player = splitstr[1]
-                #if len(splitstr) > 2:
-                #    for index in range(len(splitstr)):
-                #        if index == 0 or index == 1:
-                #            pass
-                #        else:
-                #            player+= splitstr[index] + ' '
             if message.guild.id == serverIDDict['Ishana']:
                 playerlist += (activeServerIcons[0] + ' ' + player + '\n')
             else:
@@ -333,9 +424,7 @@ async def generateList(message, inputstring):
     else:
         mpaFriendly = 'No'
         
-    em = discord.Embed(description='Use `!addme` to sign up \nOptionally you can add your class after addme. Example. `!addme br` \nUse `!removeme` to remove yourself from the mpa \nIf the MPA list is full, signing up will put you in the reserve list.', colour=color[message.channel.id])
-    # if message.guild.id == serverIDDict['Ishana']:
-    #     em.add_field(name='Meeting at', value='`' + 'Block 03`', inline=True)
+    em = discord.Embed(description='Use `!addme` to sign up \nOptionally you can add your class & subclass after addme. Example. `!addme brhu` \nUse `!removeme` to remove yourself from the mpa \nIf the MPA list is full, signing up will put you in the reserve list.', colour=color[message.channel.id])
     if hasAnMPABlock == True:
         em.add_field(name='Meeting at', value=f'`Block {mpaBlockNumber}`', inline=True)
     if message.guild.id == serverIDDict['Ishana']:
@@ -542,62 +631,66 @@ async def cmd_ffs(ctx):
 
 # Function to start an MPA. The message arguement takes the Discord Message object instead of a string. The string is passed to the broadcast arguement
 async def function_startmpa(message, broadcast, mpaType):
-    if message.channel.id in mpaChannels[str(message.guild.id)]:
-        if message.guild.id == serverIDDict['Ishana'] or message.guild.id == serverIDDict['SupportServer']:
-            mpaMap = MpaMatchDev.get_class(mpaType)
-            try:
-                if mpaMap == 'default':
-                    pass
-                else:
-                    await message.channel.send(file=discord.File(os.path.join('assetsTonk', mpaMap)))
-            except FileNotFoundError as e:
-                await message.channel.send('Unable to find a file with that name! Please check your spelling.')    
-                return
-        if mpaType == '8man' or mpaType == 'pvp' or mpaType == 'busterquest' or mpaType == 'hachiman':
-            eightMan[message.channel.id] = True
-        else:
-            eightMan[message.channel.id] = False
-        if not message.channel.id in EQTest:
-            if message.author.top_role.permissions.manage_emojis or message.author.id == OtherIDDict or message.author.top_role.permissions.administrator or message.author == client.user:
+    try:
+        if message.channel.id in mpaChannels[str(message.guild.id)]:
+            if message.guild.id == serverIDDict['Ishana'] or message.guild.id == serverIDDict['SupportServer']:
+                mpaMap = MpaMatchDev.get_class(mpaType)
                 try:
-                    if message != '' and message != '|':
-                        if broadcast == 'ouEPO*#T*#$TH(QETH(PHFGWOUDT#PWIJOYAYAYAYYAYAYAYYAYAYAYAYYAYAYAYYAYAA{IOUHIJ(*)YH#RIOjewfO*HEFU(*Y#@R':
-                            pass
-                        else:
-                            await message.channel.send(f' {broadcast}')
-                    else:
+                    if mpaMap == 'default':
                         pass
-                    EQTest[message.channel.id] = list()
-                    SubDict[message.channel.id] = list()
-                    ActiveMPA.append(message.channel.id)
-                    roleAdded[message.channel.id] = False
-                    guestEnabled[message.channel.id] = False
-                    playerRemoved[message.channel.id] = False
-                    participantCount[message.channel.id] = 0
-                    if message.channel.id in mpaExpirationConfig[str(message.guild.id)]:
-                        expirationDate[message.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
-                        mpaRemoved[message.channel.id] = False
-                        print (expirationDate[message.channel.id])
-                    if eightMan[message.channel.id] == True:
-                        for index in range(8):
-                            EQTest[message.channel.id].append(PlaceHolder(""))
-                        totalPeople[message.channel.id] = 8
                     else:
-                        for index in range(12):
-                            EQTest[message.channel.id].append(PlaceHolder(""))
-                        totalPeople[message.channel.id] = 12
-                    await generateList(message, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
-                except discord.Forbidden:
-                    print (message.author.name + f'Tried to start an MPA at {message.guild.name}, but failed.')
-                    await message.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
+                        await message.channel.send(file=discord.File(os.path.join('assetsTonk', mpaMap)))
+                except FileNotFoundError as e:
+                    await message.channel.send('Unable to find a file with that name! Please check your spelling.')    
                     return
-
+            if mpaType == '8man' or mpaType == 'pvp' or mpaType == 'busterquest' or mpaType == 'hachiman':
+                eightMan[message.channel.id] = True
             else:
-                await message.channel.send('You do not have the permission to do that, starfox.')
+                eightMan[message.channel.id] = False
+            if not message.channel.id in EQTest:
+                if message.author.top_role.permissions.manage_emojis or message.author.id == OtherIDDict or message.author.top_role.permissions.administrator or message.author == client.user:
+                    try:
+                        if message != '' and message != '|':
+                            if broadcast == 'ouEPO*#T*#$TH(QETH(PHFGWOUDT#PWIJOYAYAYAYYAYAYAYYAYAYAYAYYAYAYAYYAYAA{IOUHIJ(*)YH#RIOjewfO*HEFU(*Y#@R':
+                                pass
+                            else:
+                                await message.channel.send(f' {broadcast}')
+                        else:
+                            pass
+                        EQTest[message.channel.id] = list()
+                        SubDict[message.channel.id] = list()
+                        ActiveMPA.append(message.channel.id)
+                        roleAdded[message.channel.id] = False
+                        guestEnabled[message.channel.id] = False
+                        playerRemoved[message.channel.id] = False
+                        participantCount[message.channel.id] = 0
+                        if message.channel.id in mpaExpirationConfig[str(message.guild.id)]:
+                            expirationDate[message.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
+                            mpaRemoved[message.channel.id] = False
+                            print (expirationDate[message.channel.id])
+                        if eightMan[message.channel.id] == True:
+                            for index in range(8):
+                                EQTest[message.channel.id].append(PlaceHolder(""))
+                            totalPeople[message.channel.id] = 8
+                        else:
+                            for index in range(12):
+                                EQTest[message.channel.id].append(PlaceHolder(""))
+                            totalPeople[message.channel.id] = 12
+                        await generateList(message, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
+                    except discord.Forbidden:
+                        print (message.author.name + f'Tried to start an MPA at {message.guild.name}, but failed.')
+                        await message.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
+                        return
+
+                else:
+                    await message.channel.send('You do not have the permission to do that, starfox.')
+            else:
+                await generateList(message, '```fix\nThere is already an MPA being made here!```')
         else:
-            await generateList(message, '```fix\nThere is already an MPA being made here!```')
-    else:
+            await message.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+    except KeyError as e:
         await message.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        print (e)
 
 # Starts an MPA with the given arguements. Message and mpaType is optional, and will just fill in with the given data if nothing was put into the command.
 # Calls function_startmpa to actually do the legwork
@@ -691,10 +784,32 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
                     if ctx.author.name in item:
                         personInReserve = True
                         break
-                mpaClass = classMatch.findClass(mpaArg)
-                #classRole += '|' + classes[mpaClass]
-                classRole = classes[mpaClass]
-                print (classes[mpaClass])
+                if len(mpaArg) > 2:
+                    if len(mpaArg) == 4:
+                        classSplit = re.findall('..', mpaArg)
+                        for item in classSplit:
+                            print(item)
+                        mpaClass1 = classMatch.findClass(classSplit[0])
+                        mpaClass2 = classMatch.findClass(classSplit[1])
+                        if mpaClass1 == mpaClass2:
+                            mpaClass2 = classMatch.findClass('NoClass')
+                        if classSplit[0] not in heroClasses and classSplit[1] in subbableHeroClasses or mpaClass2 == BlankMpaClass:
+                            classRole = classes[mpaClass1] + classes[mpaClass2]
+                        elif classSplit[0] in heroClasses or classSplit[1] in heroClasses or mpaClass2 == BlankMpaClass:
+                            classRole = classes[mpaClass1]
+                        else:
+                            classRole = classes[mpaClass1] + classes[mpaClass2]
+
+                    elif len(mpaArg) > 1:
+                        classSplit = re.findall('..', mpaArg)
+                        for item in classSplit:
+                            print(item)
+                        mpaClass1 = classMatch.findClass(classSplit[0])
+                        classRole = classes[mpaClass1]
+                        print(classRole)
+                else:
+                    mpaClass = classMatch.findClass(mpaArg)
+                    classRole = classes[mpaClass]
                 roleAdded[ctx.channel.id] = True
                 if mpaArg == 'reserve' or 'reserveme' in ctx.message.content:
                     if personInMPA == False: 
@@ -922,9 +1037,32 @@ async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
                     appended = True
                 else:
                     if mpaArg != 'none':
-                        mpaClass = classMatch.findClass(mpaArg)
-                        classRole = classes[mpaClass]
-                        roleAdded[ctx.channel.id] = True
+                        if len(mpaArg) > 2:
+                            if len(mpaArg) == 4:
+                                classSplit = re.findall('..', mpaArg)
+                                for item in classSplit:
+                                    print(item)
+                                mpaClass1 = classMatch.findClass(classSplit[0])
+                                mpaClass2 = classMatch.findClass(classSplit[1])
+                                if mpaClass1 == mpaClass2:
+                                    mpaClass2 = classMatch.findClass('NoClass')
+                                if classSplit[0] not in heroClasses and classSplit[1] in subbableHeroClasses or mpaClass2 == BlankMpaClass:
+                                    classRole = classes[mpaClass1] + classes[mpaClass2]
+                                elif classSplit[0] in heroClasses or classSplit[1] in heroClasses or mpaClass2 == BlankMpaClass:
+                                    classRole = classes[mpaClass1]
+                                else:
+                                    classRole = classes[mpaClass1] + classes[mpaClass2]
+
+                            elif len(mpaArg) > 1:
+                                classSplit = re.findall('..', mpaArg)
+                                for item in classSplit:
+                                    print(item)
+                                mpaClass1 = classMatch.findClass(classSplit[0])
+                                classRole = classes[mpaClass1]
+                                print(classRole)
+                        else:
+                            mpaClass = classMatch.findClass(mpaArg)
+                            classRole = classes[mpaClass]
                     else:
                         # As all servers share the same icons, there should always be a "class" added to each string. If there is no class, just use the no class icon.
                         mpaClass = classMatch.findClass('NoClass')
@@ -1141,16 +1279,45 @@ async def cmd_remove(ctx, user):
 
 # Changes the class of the caller to another one they specify. Or none if they call for none of the classes.
 @client.command(name='changeclass')
-async def cmd_changeclass(ctx, mpaArg):
+async def cmd_changeclass(ctx, mpaArg: str = 'none'):
     inMPA = False
     if ctx.channel.id in mpaChannels[str(ctx.guild.id)] or ctx.author.top_role.permissions.administrator:
         if ctx.channel.id in EQTest:
             if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
                 expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
             await ctx.message.delete()
-            mpaClass = classMatch.findClass(mpaArg)
-            newRole = classes[mpaClass]
-            newRoleName = classMatch.findClassName(mpaClass)
+            if len(mpaArg) > 2:
+                if len(mpaArg) == 4 and mpaArg != 'none':
+                    classSplit = re.findall('..', mpaArg)
+                    for item in classSplit:
+                        print(item)
+                    mpaClass1 = classMatch.findClass(classSplit[0])
+                    mpaClass2 = classMatch.findClass(classSplit[1])
+                    print (mpaClass2)
+                    print (BlankMpaClass)
+                    newRoleName = classMatch.findClassName(mpaClass1)
+                    if mpaClass1 == mpaClass2:
+                        mpaClass2 = classMatch.findClass('NoClass')
+                    if classSplit[0] not in heroClasses and classSplit[1] in subbableHeroClasses or str(mpaClass2) == str(BlankMpaClass):
+                        newRole = classes[mpaClass1] + classes[mpaClass2]
+                    elif classSplit[0] in heroClasses or classSplit[1] in heroClasses or str(mpaClass2) == str(BlankMpaClass):
+                        newRole = classes[mpaClass1]
+                    else:
+                        newRole = classes[mpaClass1] + classes[mpaClass2]
+                        newRoleName += f'/{classMatch.findClassName(mpaClass2)}'
+
+                elif len(mpaArg) > 1:
+                    classSplit = re.findall('..', mpaArg)
+                    for item in classSplit:
+                        print(item)
+                    mpaClass1 = classMatch.findClass(classSplit[0])
+                    newRole = classes[mpaClass1]
+                    newRoleName = classMatch.findClassName(mpaClass1)
+                    print(newRole)
+            else:
+                mpaClass = classMatch.findClass(mpaArg)
+                newRole = classes[mpaClass]
+                newRoleName = classMatch.findClassName(mpaClass)
             for index, item in enumerate(EQTest[ctx.channel.id]):
                 if (type(EQTest[ctx.channel.id][index]) is PlaceHolder):
                     pass
@@ -1187,60 +1354,104 @@ async def cmd_test(ctx):
 # By default, Admins need to run this command so not every channel can have MPA commands be run on it.
 @client.command(name='enablempachannel')
 async def cmd_enablempachannel(ctx):
+    serverOnBoarded = ''
     if ctx.author.top_role.permissions.administrator:
         try:
-            if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+            dbQuery = configTable.query(KeyConditionExpression=Key('guildID').eq(f'{ctx.guild.id}'))
+            if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaChannels']):
                 await ctx.send('This channel is already an active MPA channel!')
                 return
             else:
-                mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
+                if (len(dbQuery['Items'][0]['mpaChannels'])) > 0:
+                    updateMpaChannels(ctx.guild.id, ctx.channel.id)
+                else:
+                    addMpaChannel(ctx.guild.id, ctx.channel.id)
         except KeyError:
-            print (f'{ctx.guild.id} is not in the MPA Channels Dictionary. Adding...')
-            mpaChannels[str(ctx.guild.id)] = []
-            mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
-        try:
-            dumpMpaChannels(mpaChannels)
-            print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
-            await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
-        except:
-            await ctx.send('Error adding channel.')
+            print (f'{ctx.guild.id} is not in the config table. Adding...')
+            addMpaChannel(ctx.guild.id, ctx.channel.id)
+            serverOnBoarded = 'done'
+        # This error indicates that this server is not in the database at all.
+        except IndexError:
+            if len(dbQuery['Items']) < 1:
+                print (f'{ctx.guild.id} is not in the database at all. Adding...')
+                addMpaChannel(ctx.guild.id, ctx.channel.id)
+                serverOnBoarded = 'done'
+        print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
+        await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
+        # Check to see if addMpaChannel was called, if it was that means we do not need to run the second batch of read/write ops and stop here.
+        if serverOnBoarded == 'done':
+            return
         # Add a blank expiration config to the json file
         try:
-            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+            dbQuery = configTable.query(KeyConditionExpression=Key('guildID').eq(f'{ctx.guild.id}'))
+            if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaAutoExpirationChannels']):
+                print ('Here!')
                 pass
+            else:
+                print (f'Adding {ctx.channel.id} to the MPA auto expiration config for {ctx.guild.id}')
+                updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
         except KeyError:
             print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-            mpaExpirationConfig[str(ctx.guild.id)] = []
-        try:
-            dumpMpaAutoExpiration(mpaExpirationConfig)
-            return
-        except Exception as e:
-            await ctx.send('An internal error occurred.')
-            print (e)
+            updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
+        
     else:
         await ctx.send('You do not have permissions to do this.')
         return
+    # if ctx.author.top_role.permissions.administrator:
+    #     try:
+    #         if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #             await ctx.send('This channel is already an active MPA channel!')
+    #             return
+    #         else:
+    #             mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
+    #     except KeyError:
+    #         print (f'{ctx.guild.id} is not in the MPA Channels Dictionary. Adding...')
+    #         mpaChannels[str(ctx.guild.id)] = []
+    #         mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
+    #     try:
+    #         dumpMpaChannels(mpaChannels)
+    #         print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
+    #         await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
+    #     except:
+    #         await ctx.send('Error adding channel.')
+    #     # Add a blank expiration config to the json file
+    #     try:
+    #         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+    #             pass
+    #     except KeyError:
+    #         print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
+    #         mpaExpirationConfig[str(ctx.guild.id)] = []
+    #     try:
+    #         dumpMpaAutoExpiration(mpaExpirationConfig)
+    #         return
+    #     except Exception as e:
+    #         await ctx.send('An internal error occurred.')
+    #         print (e)
+    # else:
+    #     await ctx.send('You do not have permissions to do this.')
+    #     return
 
 # Disables the MPA functions on the channel the command is called in. Removes the channel data from all the related json files.
 @client.command(name='disablempachannel')
 async def cmd_disablempachannel(ctx):
     if ctx.author.top_role.permissions.administrator:
-        if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-            try:
-                for index, item in enumerate(mpaChannels[str(ctx.guild.id)]):
-                    if ctx.channel.id == item:
-                        mpaChannels[str(ctx.guild.id)].pop(index)
-                        try:
-                            dumpMpaChannels(mpaChannels)
-                            channel = client.get_channel(item)
-                            await ctx.send(f'Removed channel {ctx.channel.mention} from the MPA channels list.')
-                            break
-                        except Exception as e:
-                            await ctx.send('Error removing the channel from the list.')
-                            print (e)
-            except Exception as e:
-                await ctx.send('Error removing the channel.')
-                print (e)
+        
+    #     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #         try:
+    #             for index, item in enumerate(mpaChannels[str(ctx.guild.id)]):
+    #                 if ctx.channel.id == item:
+    #                     mpaChannels[str(ctx.guild.id)].pop(index)
+    #                     try:
+    #                         dumpMpaChannels(mpaChannels)
+    #                         channel = client.get_channel(item)
+    #                         await ctx.send(f'Removed channel {ctx.channel.mention} from the MPA channels list.')
+    #                         break
+    #                     except Exception as e:
+    #                         await ctx.send('Error removing the channel from the list.')
+    #                         print (e)
+    #         except Exception as e:
+    #             await ctx.send('Error removing the channel.')
+    #             print (e)
     print ('Deactivating the auto expiration...')
     # When the channel is deactivated, also deactivate the auto expiration function for the channel.
     if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
@@ -1520,4 +1731,4 @@ async def on_resumed():
     resumeRole = discord.utils.get(client.get_guild(serverIDDict['Bloop']).roles, id=405620919541694464)
     await client.get_channel(OtherIDDict['ControlPanel']).send(f'Tonk has {resumeRole.mention}' + '\nConnected to **' + str(connectedServers) + '** servers')
 # WOOHOO    
-client.run(Key)
+client.run(APIKey)
