@@ -16,7 +16,7 @@ def updateMpaChannels(guildID, newChannelID, timeStamp):
         Key={
             'guildID': f"{guildID}"
         },
-        UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel), SET lastUpdated = :timestamp",
+        UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel), lastUpdated = :timestamp",
         ExpressionAttributeValues={
             ':newmpachannel': [f"{newChannelID}"],
             ':timestamp': [f"{timeStamp}"]
@@ -71,3 +71,34 @@ def removeMpaChannel(guildID, channelIndex, timeStamp):
         }
     )
     return
+
+
+def addMpaBlockNumber(guildID, channelID: str, blockNumber: str, timeStamp):
+    # Based on this thread with no real answer to the problem, https://forums.aws.amazon.com/thread.jspa?threadID=162907 it looks like I may have to make 2 requests in this function...
+    configTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"SET mpaConfig.#channelID.mpaBlock = :block, lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}"
+        },
+        ExpressionAttributeValues={
+            ':block': f"{blockNumber}",
+            ':timestamp': f"{timeStamp}",
+            ':empty': {"M:": {}}
+        }
+    )
+    return
+
+# def removeMpaBlockNumber(guildID, channelID, blockNumber, timeStamp):
+#     configTable.update_item(
+#         Key={
+#             'guildID': f"{guildID}"
+#         },
+#         UpdateExpression=f"SET mpaConfig.{channelID}.mpaBlock = :block",
+#         ExpressionAttributeValues={
+#             ':block': f"{blockNumber}"
+#         }
+#     )
+#     return

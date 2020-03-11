@@ -1305,39 +1305,6 @@ async def cmd_enablempachannel(ctx):
     else:
         await ctx.send('You do not have permissions to do this.')
         return
-    # if ctx.author.top_role.permissions.administrator:
-    #     try:
-    #         if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-    #             await ctx.send('This channel is already an active MPA channel!')
-    #             return
-    #         else:
-    #             mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
-    #     except KeyError:
-    #         print (f'{ctx.guild.id} is not in the MPA Channels Dictionary. Adding...')
-    #         mpaChannels[str(ctx.guild.id)] = []
-    #         mpaChannels[str(ctx.guild.id)].append(ctx.channel.id)
-    #     try:
-    #         dumpMpaChannels(mpaChannels)
-    #         print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
-    #         await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
-    #     except:
-    #         await ctx.send('Error adding channel.')
-    #     # Add a blank expiration config to the json file
-    #     try:
-    #         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-    #             pass
-    #     except KeyError:
-    #         print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-    #         mpaExpirationConfig[str(ctx.guild.id)] = []
-    #     try:
-    #         dumpMpaAutoExpiration(mpaExpirationConfig)
-    #         return
-    #     except Exception as e:
-    #         await ctx.send('An internal error occurred.')
-    #         print (e)
-    # else:
-    #     await ctx.send('You do not have permissions to do this.')
-    #     return
 
 # Disables the MPA functions on the channel the command is called in. Removes the channel data from all the related json files.
 @client.command(name='disablempachannel')
@@ -1356,38 +1323,6 @@ async def cmd_disablempachannel(ctx):
             await ctx.send('Error removing the channel from the list.')
             traceback.print_exc(file=sys.stdout)
             return
-    #     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-    #         try:
-    #             for index, item in enumerate(mpaChannels[str(ctx.guild.id)]):
-    #                 if ctx.channel.id == item:
-    #                     mpaChannels[str(ctx.guild.id)].pop(index)
-    #                     try:
-    #                         dumpMpaChannels(mpaChannels)
-    #                         channel = client.get_channel(item)
-    #                         await ctx.send(f'Removed channel {ctx.channel.mention} from the MPA channels list.')
-    #                         break
-    #                     except Exception as e:
-    #                         await ctx.send('Error removing the channel from the list.')
-    #                         print (e)
-    #         except Exception as e:
-    #             await ctx.send('Error removing the channel.')
-    #             print (e)
-    # print ('Deactivating the auto expiration...')
-    # # When the channel is deactivated, also deactivate the auto expiration function for the channel.
-    # if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-    #     try:
-    #         for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
-    #             if ctx.channel.id == item:
-    #                 mpaExpirationConfig[str(ctx.guild.id)].pop(index)
-    #                 try:
-    #                     dumpMpaAutoExpiration(mpaExpirationConfig)
-    #                     channel = client.get_channel(item)
-    #                     return
-    #                 except Exception as e:
-    #                     print (e)
-    #     except Exception as e:
-    #         await ctx.send('Error removing the channel.')
-    #         print (e)
     return
 
 # This sets the value for the "Meeting in" section of the MPA list.
@@ -1395,9 +1330,7 @@ async def cmd_disablempachannel(ctx):
 async def cmd_setmpablock(ctx, blockNumber):
     if ctx.author.top_role.permissions.administrator:
         try:
-            if len(blockNumber) < 32:
-                mpaBlockNumber = int(blockNumber)
-            else:
+            if len(blockNumber) > 32:
                 await ctx.send('That number is too big! Please try again with a smaller number!')
                 return
         except ValueError:
@@ -1407,32 +1340,74 @@ async def cmd_setmpablock(ctx, blockNumber):
             else:
                 await ctx.send('Please provide just the number!')
                 return
-        try: 
-            if mpaBlockNumber == mpaBlockConfigDict[str(ctx.guild.id)]:
-                await ctx.send(f'This server is already set for block {mpaBlockNumber}!')
+        try:
+            dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
+            print (type(dbQuery['Items'][0]['mpaConfig']))
+            if (str(ctx.channel.id)) not in (dbQuery['Items'][0]['mpaChannels']):
+                await ctx.send(f'This channel is not enabled as an mpa channel. Please enable mpa functions for this channel with `{commandPrefix}enablempachannel`')
+                return
+            if blockNumber == dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}']['mpaBlock']:
+                await ctx.send(f'This server is already set for block {blockNumber}!')
                 return
             elif blockNumber.lower() == 'clear' and mpaBlockNumber == 99999999999999999999999999999999:
-                del mpaBlockConfigDict[str(ctx.guild.id)]
+               # tonkDB.clearMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
                 await ctx.send('Successfully removed the block from the MPA configuration.')
-            else:
-                mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
-        except KeyError:
-            print (f'{ctx.guild.id} is not in the dictionary. Adding that in..')
-            if blockNumber.lower() == 'clear':
-                await ctx.send("You can't just clear nothing, are you drunk?")
                 return
             else:
-                mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
-        try:
-            dumpMpaBlockConfig(mpaBlockConfigDict)
-            if blockNumber.lower() != 'clear':
-                print (f"{ctx.author.name} has set {ctx.guild.name}'s block number to {mpaBlockNumber}.")
-                await ctx.send(f'Set the server block to {mpaBlockNumber}')
+                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
+                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
+                return
+        except IndexError:
+            # If indexerror is called, it means the server that is calling this command does not exist in the database and they need to enable an mpachannel to be registered onto the db.
+            if len(dbQuery['Items']) < 1:
+                await ctx.send(f'Please enable the channel to be used as an MPA channel first with `{commandPrefix}enablempachannel`')
+                return
+        except KeyError as e:
+            # There are a variety of different reasons why KeyErrors generate. Different missing keys will indicate different reasons.
+            # If mpaConfig is the missing key, it means this server does not have any mpaConfigs applied to it previously.
+            if e.args[0] == 'mpaConfig':
+                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
+                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
+            # Channel ID being the missing key indicates the channel ID is not in the mpaConfig list before.
+            elif e.args[0] == str(ctx.channel.id):
+                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
+                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
+            # mpaBlock missing means the channel ID does exist in the mpaConfig item, but does not have any mpaBlock variables configured for it.
+            elif e.args[0] == 'mpaBlock':
+                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
+                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
+            # Dump any other errors I cant think of.
+            else:
+                traceback.print_exc(file=sys.stdout)
+                await ctx.send('An error occurred attempting to set this config flag. Please check the console for more details.')
             return
-        except Exception as e:
-            print (e)
-            await ctx.send('Something went wrong! AAAAA')
-            return
+
+        # try: 
+        #     if mpaBlockNumber == mpaBlockConfigDict[str(ctx.guild.id)]:
+        #         await ctx.send(f'This server is already set for block {mpaBlockNumber}!')
+        #         return
+        #     elif blockNumber.lower() == 'clear' and mpaBlockNumber == 99999999999999999999999999999999:
+        #         del mpaBlockConfigDict[str(ctx.guild.id)]
+        #         await ctx.send('Successfully removed the block from the MPA configuration.')
+        #     else:
+        #         mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
+        # except KeyError:
+        #     print (f'{ctx.guild.id} is not in the dictionary. Adding that in..')
+        #     if blockNumber.lower() == 'clear':
+        #         await ctx.send("You can't just clear nothing, are you drunk?")
+        #         return
+        #     else:
+        #         mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
+        # try:
+        #     dumpMpaBlockConfig(mpaBlockConfigDict)
+        #     if blockNumber.lower() != 'clear':
+        #         print (f"{ctx.author.name} has set {ctx.guild.name}'s block number to {mpaBlockNumber}.")
+        #         await ctx.send(f'Set the server block to {mpaBlockNumber}')
+        #     return
+        # except Exception as e:
+        #     print (e)
+        #     await ctx.send('Something went wrong! AAAAA')
+        #     return
 
 
 # # Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
@@ -1458,30 +1433,30 @@ async def cmd_setmpablock(ctx, blockNumber):
 #             print (e)
 #         return
 
-# Disables automatic MPA deletion in the channel this comamnd was called in.
-# Note that this automatically runs if the disablempachannel was called.
-@client.command(name='disablempaexpiration')
-async def cmd_disablempaexpiration(ctx):
-    if ctx.author.top_role.permissions.administrator:
-        if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-            try:
-                for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
-                    if ctx.channel.id == item:
-                        mpaExpirationConfig[str(ctx.guild.id)].pop(index)
-                        try:
-                            dumpMpaAutoExpiration(mpaExpirationConfig)
-                            channel = client.get_channel(item)
-                            await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
-                            return
-                        except Exception as e:
-                            await ctx.send('Error removing the channel from the list.')
-                            print (e)
-            except Exception as e:
-                await ctx.send('Error removing the channel.')
-                print (e)
-        else:
-            await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
-            return
+# # Disables automatic MPA deletion in the channel this comamnd was called in.
+# # Note that this automatically runs if the disablempachannel was called.
+# @client.command(name='disablempaexpiration')
+# async def cmd_disablempaexpiration(ctx):
+#     if ctx.author.top_role.permissions.administrator:
+#         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+#             try:
+#                 for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
+#                     if ctx.channel.id == item:
+#                         mpaExpirationConfig[str(ctx.guild.id)].pop(index)
+#                         try:
+#                             dumpMpaAutoExpiration(mpaExpirationConfig)
+#                             channel = client.get_channel(item)
+#                             await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
+#                             return
+#                         except Exception as e:
+#                             await ctx.send('Error removing the channel from the list.')
+#                             print (e)
+#             except Exception as e:
+#                 await ctx.send('Error removing the channel.')
+#                 print (e)
+#         else:
+#             await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
+#             return
 
 # Debugging command
 @client.command(name='eval')

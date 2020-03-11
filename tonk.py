@@ -1210,8 +1210,7 @@ async def cmd_removeme(ctx):
 @client.command(name='remove')
 async def cmd_remove(ctx, user):
     global BlankMpaClass
-    if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.guild.id == serverIDDict[
-        'RappyCasino'] or ctx.author.top_role.permissions.administrator:
+    if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.guild.id == serverIDDict['RappyCasino'] or ctx.author.top_role.permissions.administrator:
         if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
             if ctx.channel.id in EQTest:
                 if len(EQTest[ctx.channel.id]):
