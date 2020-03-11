@@ -19,6 +19,7 @@ from discord.ext import commands
 from assetsTonk import MpaMatchDev
 from assetsTonk import classMatch
 from assetsTonk import tonkHelper
+from assetsTonk import tonkDB
 
 class FakeMember():
     def __init__(self, name):
@@ -70,38 +71,6 @@ mpaRemoved = {}
 # Internal flag
 appended = False
 
-
-
-# myID = "16541569465146"
-
-# 
-# table.put_item(
-#     Item={
-#         'guildID': f"{myID}",
-#         'mpaChannels': ["410626108917284864", "578234578184044565"],
-#         'mpaAutoExpiration': ["0"],
-#         'mpaBlocksdb': "222"
-#     }
-# )
-
-#table.update_item(
-#    Key={
-#        'guildID': f"{myID}"
-#    },
-#    UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel)",
-#    ExpressionAttributeValues={
-#        ':newmpachannel': ["21031030123"]
-#    }
-#)
-
-#resp = table.query(KeyConditionExpression=Key('guildID').eq(f'{myID}'))
-
-#print("The query returned the following items:")
-#for item in resp['Items']:
-#    print(item)
-#    print(list(item['mpaChannels'])[0])
-
-#sys.exit(0)
 commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
 client = commands.Bot(command_prefix=commandPrefix)
 # Remove the default help command
@@ -219,66 +188,7 @@ def runDataLoadup():
     loadscheduledMpa()
     loadmpaBlockConfigs()
 
-def updateMpaChannels(guildID, newChannelID):
-    configTable.update_item(
-        Key={
-            'guildID': f"{guildID}"
-        },
-        UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel)",
-        ExpressionAttributeValues={
-            ':newmpachannel': [f"{newChannelID}"]
-        }
-    )
-    return
-# This function should only be used when the server has no MPA channels whatsoever.
-# The function is also used if the server does not already exist in the database.
-def addMpaChannel(guildID, newChannelID):
-    configTable.put_item(
-        Item={
-            'guildID': f"{guildID}",
-            'mpaChannels': [f"{newChannelID}"],
-            'mpaAutoExpirationChannels': [f"{newChannelID}"]
-        }
-    )
-    return
-
-def updateMpaAutoExpirationChannels(guildID, newChannelID, dbQuery):
-    try:
-        if len(dbQuery['Items'][0]['mpaAutoExpirationChannels']) > 0:   
-            configTable.update_item(
-            Key={
-                'guildID': f"{guildID}"
-            },
-            UpdateExpression="SET mpaAutoExpirationChannels = list_append(mpaAutoExpirationChannels, :newmpachannel)",
-            ExpressionAttributeValues={
-                ':newmpachannel': [f"{newChannelID}"]
-            }
-            )
-    except KeyError:
-            configTable.update_item(
-            Key={
-                'guildID': f"{guildID}"
-            },
-            UpdateExpression="SET mpaAutoExpirationChannels = if_not_exists(mpaAutoExpirationChannels, :newmpachannel)",
-            ExpressionAttributeValues={
-                ':newmpachannel': [f"{newChannelID}"]
-            }
-            )
-    return
-
-
-# def addMpaAutoExpirationChannel(guildID, newChannelID):
-#     configTable.put_item(
-#         Item={
-#             'guildID': f"{guildID}",
-#             'mpaAutoExpirationChannels': [f"{newChannelID}"]
-#         }
-#     )
-#     return
-
-# Run the data load on startup
 runDataLoadup()
-
 
 
 print ('Loading classes list...\n')  
@@ -1356,42 +1266,41 @@ async def cmd_enablempachannel(ctx):
     serverOnBoarded = ''
     if ctx.author.top_role.permissions.administrator:
         try:
-            dbQuery = configTable.query(KeyConditionExpression=Key('guildID').eq(f'{ctx.guild.id}'))
+            dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
             if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaChannels']):
                 await ctx.send('This channel is already an active MPA channel!')
                 return
             else:
                 if (len(dbQuery['Items'][0]['mpaChannels'])) > 0:
-                    updateMpaChannels(ctx.guild.id, ctx.channel.id)
+                    tonkDB.updateMpaChannels(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
                 else:
-                    addMpaChannel(ctx.guild.id, ctx.channel.id)
+                    tonkDB.addMpaChannel(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
         except KeyError:
             print (f'{ctx.guild.id} is not in the config table. Adding...')
-            addMpaChannel(ctx.guild.id, ctx.channel.id)
+            tonkDB.addMpaChannel(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
             serverOnBoarded = 'done'
         # This error indicates that this server is not in the database at all.
         except IndexError:
             if len(dbQuery['Items']) < 1:
                 print (f'{ctx.guild.id} is not in the database at all. Adding...')
-                addMpaChannel(ctx.guild.id, ctx.channel.id)
+                tonkDB.addMpaChannel(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
                 serverOnBoarded = 'done'
         print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
         await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
         # Check to see if addMpaChannel was called, if it was that means we do not need to run the second batch of read/write ops and stop here.
         if serverOnBoarded == 'done':
             return
-        # Add a blank expiration config to the json file
-        try:
-            dbQuery = configTable.query(KeyConditionExpression=Key('guildID').eq(f'{ctx.guild.id}'))
-            if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaAutoExpirationChannels']):
-                print ('Here!')
-                pass
-            else:
-                print (f'Adding {ctx.channel.id} to the MPA auto expiration config for {ctx.guild.id}')
-                updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
-        except KeyError:
-            print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-            updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
+        # # Add a blank expiration config to the json file
+        # try:
+        #     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
+        #     if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaAutoExpirationChannels']):
+        #         pass
+        #     else:
+        #         print (f'Adding {ctx.channel.id} to the MPA auto expiration config for {ctx.guild.id}')
+        #         tonkDB.updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
+        # except KeyError:
+        #     print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
+        #     tonkDB.updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
         
     else:
         await ctx.send('You do not have permissions to do this.')
@@ -1434,13 +1343,17 @@ async def cmd_enablempachannel(ctx):
 @client.command(name='disablempachannel')
 async def cmd_disablempachannel(ctx):
     if ctx.author.top_role.permissions.administrator:
-        dbQuery = configTable.query(KeyConditionExpression=Key('guildID').eq(f'{ctx.guild.id}'))
+        dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
         try:
             if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaChannels']):
-                for item in dbQuery['Items'][0]['mpaChannels']:
+                print (dbQuery['Items'][0]['mpaChannels'])
+                for index, item in enumerate(dbQuery['Items'][0]['mpaChannels']):
                     if str(ctx.channel.id) == str(item):
-                        removeMpaChannel(ctx.guild.id, ctx.channel.id)
+                        tonkDB.removeMpaChannel(ctx.guild.id, index, str(datetime.utcnow()))
+                        await ctx.send(f'Removed channel {ctx.channel.mention} from the MPA channels list.')
+                        break
         except Exception as e:
+            await ctx.send('Error removing the channel from the list.')
             traceback.print_exc(file=sys.stdout)
             return
     #     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
@@ -1459,22 +1372,22 @@ async def cmd_disablempachannel(ctx):
     #         except Exception as e:
     #             await ctx.send('Error removing the channel.')
     #             print (e)
-    print ('Deactivating the auto expiration...')
-    # When the channel is deactivated, also deactivate the auto expiration function for the channel.
-    if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-        try:
-            for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
-                if ctx.channel.id == item:
-                    mpaExpirationConfig[str(ctx.guild.id)].pop(index)
-                    try:
-                        dumpMpaAutoExpiration(mpaExpirationConfig)
-                        channel = client.get_channel(item)
-                        return
-                    except Exception as e:
-                        print (e)
-        except Exception as e:
-            await ctx.send('Error removing the channel.')
-            print (e)
+    # print ('Deactivating the auto expiration...')
+    # # When the channel is deactivated, also deactivate the auto expiration function for the channel.
+    # if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+    #     try:
+    #         for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
+    #             if ctx.channel.id == item:
+    #                 mpaExpirationConfig[str(ctx.guild.id)].pop(index)
+    #                 try:
+    #                     dumpMpaAutoExpiration(mpaExpirationConfig)
+    #                     channel = client.get_channel(item)
+    #                     return
+    #                 except Exception as e:
+    #                     print (e)
+    #     except Exception as e:
+    #         await ctx.send('Error removing the channel.')
+    #         print (e)
     return
 
 # This sets the value for the "Meeting in" section of the MPA list.
@@ -1522,28 +1435,28 @@ async def cmd_setmpablock(ctx, blockNumber):
             return
 
 
-# Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
-@client.command(name='enablempaexpiration')
-async def cmd_enablempaexpiration(ctx):
-    if ctx.author.top_role.permissions.administrator:
-        try:
-            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-                await ctx.send('This channel already has auto expiration enabled!')
-                return
-            else:
-                mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
-        except KeyError:
-            print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-            mpaExpirationConfig[str(ctx.guild.id)] = []
-            mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
-        try:
-            dumpMpaAutoExpiration(mpaExpirationConfig)
-            print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
-            await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
-        except Exception as e:
-            await ctx.send('Error enabling the channel.')
-            print (e)
-        return
+# # Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
+# @client.command(name='enablempaexpiration')
+# async def cmd_enablempaexpiration(ctx):
+#     if ctx.author.top_role.permissions.administrator:
+#         try:
+#             if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+#                 await ctx.send('This channel already has auto expiration enabled!')
+#                 return
+#             else:
+#                 mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
+#         except KeyError:
+#             print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
+#             mpaExpirationConfig[str(ctx.guild.id)] = []
+#             mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
+#         try:
+#             dumpMpaAutoExpiration(mpaExpirationConfig)
+#             print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
+#             await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
+#         except Exception as e:
+#             await ctx.send('Error enabling the channel.')
+#             print (e)
+#         return
 
 # Disables automatic MPA deletion in the channel this comamnd was called in.
 # Note that this automatically runs if the disablempachannel was called.
