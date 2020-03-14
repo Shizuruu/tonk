@@ -124,7 +124,7 @@ def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
     )
     return
 
-def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, expirationDate, startDate):
+def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, maxParticipants, expirationDate, startDate):
     dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
@@ -139,6 +139,7 @@ def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, 
                 'EQTest': EQList,
                 'SubList': SubList,
                 'guestEnabled': f"{str(guestEnabled)}",
+                'maxParticipants': f"{str(maxParticipants)}",
                 'participantCount': f"{str(participantCount)}",
                 'expirationDate': f"{expirationDate}",
                 'startDate': f"{startDate}"
@@ -147,7 +148,7 @@ def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, 
         }
     )
 
-def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, expirationDate, timeStamp):
+def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, maxParticipants, expirationDate, timeStamp):
     dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
@@ -162,6 +163,7 @@ def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled,
                 'EQTest': EQList,
                 'SubList': SubList,
                 'guestEnabled': f"{str(guestEnabled)}",
+                'maxParticipants': f"{str(maxParticipants)}",
                 'participantCount': f"{str(participantCount)}",
                 'expirationDate': f"{expirationDate}",
             },

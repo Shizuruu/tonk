@@ -35,3 +35,12 @@ def getMpaExpirationTime(channelID: str, dbQuery, defaultDBQuery):
         return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['mpaExpirationTime']
     except KeyError:
         return defaultDBQuery['Items'][0]['mpaConfig']['mpaExpirationTime']
+
+def getClassIcons(defaultDBQuery):
+    return defaultDBQuery['Items'][0]['mpaConfig']['classIDs']
+
+def getMpaBlock(channelID: str, dbQuery, defaultDBQuery):
+    try:
+        return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['mpaBlock']
+    except KeyError:
+        return defaultDBQuery['Items'][0]['mpaConfig']['mpaBlock']
