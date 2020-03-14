@@ -11,6 +11,9 @@ dbTable = dynamodb.Table(f"{ConfigDict['DB-NAME']}")
 def gidQueryDB(guildID):
     return dbTable.query(KeyConditionExpression=Key('guildID').eq(f'{guildID}'))
 
+def configDefaultQueryDB():
+    return dbTable.query(KeyConditionExpression=Key('guildID').eq('defaults'))
+
 def updateMpaChannels(guildID, newChannelID, timeStamp):
     dbTable.update_item(
         Key={
@@ -31,7 +34,8 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
             'guildID': f"{guildID}",
             'mpaChannels': [f"{newChannelID}"],
             'lastUpdated': f"{timeStamp}",
-            'mpaConfig': {f"{newChannelID}": {}}
+            'mpaConfig': {f"{newChannelID}": {}},
+            'activeMPAs': {{}}
         }
     )
     return
@@ -105,3 +109,73 @@ def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
     )
     return
 
+def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
+    dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"REMOVE mpaConfig.#channelID.mpaBlock SET lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}"
+        },
+        ExpressionAttributeValues={
+            ':timestamp': f"{timeStamp}"
+        }
+    )
+    return
+
+def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, expirationDate, startDate):
+    dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"SET activeMPAs.#channelID.#messageID.EQTest = :EQTest, SubList = :SubList, guestEnabled = :guestEnabled, participantCount = :participantCount, expirationDate = :expirationDate, startDate = :startDate, lastUpdated = :startDate",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}",
+            '#messageID': f"{messageID}"
+        },
+        ExpressionAttributeValues={
+            ':EQTest': EQList,
+            ':SubList': SubList,
+            ':guestEnabled': f"{str(guestEnabled)}",
+            ':participantCount': f"{str(participantCount)}",
+            ':expirationDate': f"{expirationDate}",
+            ':startDate': f"{startDate}",
+        }
+    )
+
+def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, expirationDate, timeStamp):
+    dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"SET activeMPAs.#channelID.#messageID.EQTest = :EQTest, SubList = :SubList, guestEnabled = :guestEnabled, participantCount = :participantCount, expirationDate = :expirationDate, lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}",
+            '#messageID': f"{messageID}"
+        },
+        ExpressionAttributeValues={
+            ':EQTest': EQList,
+            ':SubList': SubList,
+            ':guestEnabled': f"{str(guestEnabled)}",
+            ':participantCount': f"{str(participantCount)}",
+            ':expirationDate': f"{expirationDate}",
+            ':timestamp': f"{timeStamp}"
+        }
+    )
+
+
+def removeMPATable(guildID, channelID, messageID):
+    dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"REMOVE activeMPAs.#channelID.#messageID SET lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}",
+            '#messageID': f"{messageID}"
+        },
+        ExpressionAttributeValues={
+            ':timestamp': f"{timeStamp}"
+        }
+    )

@@ -22,12 +22,8 @@ from assetsTonk import tonkHelper
 from assetsTonk import tonkDB
 from assetsTonk import utils
 from assetsTonk import mpaControl
+from assetsTonk import parseDB
 
-class PlaceHolder():
-    def __init__(self, name):
-        self.name = name
-    def __str__(self):
-        return str(self.name)
 # These are all the constants that will be used throughout the bot. Most if not all of these are dictionaries that allow for different settings per server/channel to be used.
 print ('Beginning bot startup process...\n')
 
@@ -107,8 +103,7 @@ def is_bot(m):
     
 def is_not_bot(m):
    return m.author != client.user
-def is_pinned(m):
-   return m.pinned != True
+
 # A function that finds the roleID from a debugging message
 def findRoleID(roleName, message):
     result = discord.utils.find(lambda m: m.name == roleName, message.guild.roles)
@@ -275,11 +270,12 @@ async def mpa_schedulerclock():
                 print ('An error occurred while trying to automatically dump the mpaschedule dict to JSON')
                 print (e)
                 return
-# Arguements to be taken in DB revision: message, dbQuery, EQList, SubDict, inputstring)
+# Arguements to be taken in DB revision: message, dbQuery, EQList, SubDict, maxParticipants, inputstring)
 # message: The message object to modify when updating the EQ List display on the channel
 # dbQuery: Dictionary object to query configuration items for user/server preferences
 # EQList: Actual EQ list data, which will be parsed and displayed on the channel
 # SubDict: Reserve list data, same behavior as previously
+# maxParticipants: Max amount of people in the MPA.
 # inputstring: Same behavior as before.
 async def generateList(message, inputstring):
     global MPACount
@@ -545,7 +541,7 @@ async def cmd_ffs(ctx):
 # Starts an MPA with the given arguements. Message and mpaType is optional, and will just fill in with the given data if nothing was put into the command.
 # Calls function_startmpa to actually do the legwork
 @client.command(name='startmpa')
-async def cmd_startmpa(ctx, message: str = '', mpaType: str = 'default'):
+async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
     # This checks if Tonk has the deleting permission. If it doesn't, don't run the script at all and just stop.
     try:
         await ctx.message.delete()
@@ -553,45 +549,19 @@ async def cmd_startmpa(ctx, message: str = '', mpaType: str = 'default'):
         print (ctx.author.name + f' Tried to start an MPA at {ctx.message.guild.name}, but failed.')
         await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
         return
-    if message == '':
-        print ("yes")
-        newmessage = "ouEPO*#T*#$TH(QETH(PHFGWOUDT#PWIJOYAYAYAYYAYAYAYYAYAYAYAYYAYAYAYYAYAA{IOUHIJ(*)YH#RIOjewfO*HEFU(*Y#@R"
-        await function_startmpa(ctx, newmessage, mpaType)
-    else:
-        await function_startmpa(ctx, message, mpaType)
-#This function actually performs the removempa command. This is a separate function so that the bot can remove mpas as well.
-async def function_removempa(message):
-    global MPACount
-    if message.author.top_role.permissions.manage_emojis or message.author.id == OtherIDDict or message.author.top_role.permissions.administrator or message.author.id == client.user.id:
-        if message.channel.id in mpaChannels[str(message.guild.id)]:
-            if message.channel.id in EQTest:
-                try:
-                    #await ctx.message.delete()
-                    del EQTest[message.channel.id]
-                    MPACount -= 1
-                    mpaRemoved[message.channel.id] = True
-                    await client.get_channel(OtherIDDict['ControlPanel']).send('```diff\n- ' + message.author.name + '#' + message.author.discriminator + ' (ID: ' + str(message.author.id) + ') ' + 'Closed an MPA on ' + message.guild.name + '\n- Amount of Active MPAs: ' + str(MPACount) + '\nTimestamp: ' + str(datetime.now()) + '```')
-                    print(message.author.name + ' Closed an MPA on ' + message.guild.name)
-                    print('Amount of Active MPAs: ' + str(MPACount))
-                    if eightMan[message.channel.id] == True:
-                        eightMan[message.channel.id] = False
-                    await message.channel.purge(limit=100, after=getTime, check=is_pinned)
-                    participantCount[message.channel.id] = 0
-                    index = ActiveMPA.index(message.channel.id)
-                    ActiveMPA.pop(index)
-                except KeyError:
-                    pass
-            else:
-                await message.channel.send('There is no MPA to remove!')
-        else:
-            await message.channel.send('This command can only be used in a MPA channel!')
-    else:
-        await generateList(message, '```fix\nYou are not a manager. GTFO```')
+    # if message == '':
+    #     #newmessage = "ouEPO*#T*#$TH(QETH(PHFGWOUDT#PWIJOYAYAYAYYAYAYAYYAYAYAYAYYAYAYAYYAYAA{IOUHIJ(*)YH#RIOjewfO*HEFU(*Y#@R"
+    #     await mpaControl.startmpa(ctx, message, mpaType)
+    # else:
+    await mpaControl.startmpa(ctx, message, mpaType)
 
 # Closes out the MPA and flushes related data so another MPA can be opened in the same channel at a later date.
 @client.command(name='removempa')
 async def cmd_removempa(ctx):
-    await function_removempa(ctx.message)
+    if message.author.top_role.permissions.manage_emojis or message.author.top_role.permissions.administrator or message.author.id == client.user.id:
+        await function_removempa(ctx.message)
+    else:
+        await ctx.send('You do not have permissions to remove the mpa.')
 
 # Adds the user into the EQ list in the EQ channel. Optionally takes a class as an arguement. If one is passed, add the class icon and the user's name into the EQ list.
 @client.command(name='addme', aliases=['reserveme'])
