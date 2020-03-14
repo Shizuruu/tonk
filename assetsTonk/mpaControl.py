@@ -3,18 +3,20 @@ import datetime
 import discord
 import json
 import time
+import traceback
+import sys
 from datetime import datetime
 from dateutil.parser import parse
-from discord.ext import commands
+#from discord.ext import commands
 
 from assetsTonk import tonkDB
 from assetsTonk import parseDB
 from assetsTonk import MpaMatchDev
 
-ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
-ConfigDict = json.loads(ConfigFile.read())
-commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
-client = commands.Bot(command_prefix=commandPrefix)
+# ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+# ConfigDict = json.loads(ConfigFile.read())
+# commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
+# client = commands.Bot(command_prefix=commandPrefix)
 
 class PlaceHolder():
     def __init__(self, name):
@@ -27,9 +29,6 @@ def is_pinned(m):
 
 # Function to start an MPA. The message arguement takes the Discord Message object instead of a string. The string is passed to the broadcast arguement
 async def startmpa(ctx, broadcast, mpaType):
-    maxParticipant = 12
-    participantCount = 0
-    EQTest = []
     try:
         # Query the DB to see if there is an MPA and query for the configuration items
         dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
@@ -60,8 +59,11 @@ async def startmpa(ctx, broadcast, mpaType):
         except FileNotFoundError as e:
             await ctx.channel.send('Unable to find a file with that name! Please check your spelling.')    
             return
+        #listMessage = None
         if mpaType in specialMPATypes.keys():
-            maxParticipant = 8
+            maxParticipant = specialMPATypes[f'{mpaType}']
+        else:
+            maxParticipant = 12
         if not activeMPAList[f'{str(ctx.channel.id)}']:
             if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator or ctx.author == client.user:
                 try:
@@ -69,8 +71,10 @@ async def startmpa(ctx, broadcast, mpaType):
                         pass
                     else:
                         await ctx.channel.send(f' {broadcast}')
-                    EQTest = list()
-                    SubDict = list()
+                    participantCount = 0
+                    EQTest = []
+                    SubDict = []
+                    listMessage = await ctx.channel.send('Please wait... Building list')
                     if mpaExpirationEnabled:
                         expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaExpirationTime))
                     else:
@@ -82,10 +86,10 @@ async def startmpa(ctx, broadcast, mpaType):
                     if any(isinstance(EQItem, PlaceHolder) for EQItem in EQTest):
                         for index, item in enumerate(EQTest):
                             if isinstance(item, PlaceHolder):
-                                EQTest[index] = f"PlaceHolder{ctx.channel.id}{ctx.message.id}"
+                                EQTest[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
                     # Update the DB with the MPA data
-                    tonkDB.startMPATable(ctx.guild.id, ctx.channel.id, ctx.message.id, EQTest, SubDict, guestEnabled, participantCount, maxParticipant, str(expirationDate), startDate)
-                    await generateList(ctx, dbQuery, defaultConfigQuery, EQTest, SubDict, guestEnabled, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
+                    tonkDB.startMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQTest, SubDict, guestEnabled, participantCount, maxParticipant, str(expirationDate), startDate)
+                    await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, guestEnabled, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
                 except discord.Forbidden:
                     print (ctx.author.name + f'Tried to start an MPA at {ctx.guild.name}, but failed.')
                     await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
@@ -94,7 +98,20 @@ async def startmpa(ctx, broadcast, mpaType):
             else:
                 await ctx.channel.send('You do not have the permission to do that, starfox.')
         else:
-            await generateList(ctx, dbQuery, defaultConfigQuery, EQTest, SubDict, guestEnabled, participantCount, maxParticipant, '```fix\nThere is already an MPA being made here!```')
+            for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
+                listMessageID = int(key)
+                break
+                # Future code to support multiple MPAs in one channel
+                #if (mpaID - 1) == index:
+                #    break
+            # Because we don't want to accidentally override any list variables if there is already an existing MPA, we take the current data that already exists and pass it into generateList
+            participantCount = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount']
+            EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
+            SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
+            listMessage = await ctx.fetch_message(listMessageID)
+            maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipant']
+            guestEnabled = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['guestEnabled']
+            await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, guestEnabled, participantCount, maxParticipant, '```fix\nThere is already an MPA being made here!```')
     else:
         await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
 
@@ -133,7 +150,7 @@ async def removempa(ctx):
 # guestEnabled: Yes/no for guest enabled
 # maxParticipants: Max amount of people in the MPA.
 # inputstring: Same behavior as before.
-async def generateList(ctx, dbQuery, defaultConfigQuery, EQList, SubDict, guestEnabled, participantCount, maxParticipants, inputstring):
+async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, SubDict, guestEnabled, participantCount, maxParticipants, inputstring):
     # global MPACount
     # global BlankMpaClass
     # global inactiveServerIcons
@@ -149,15 +166,22 @@ async def generateList(ctx, dbQuery, defaultConfigQuery, EQList, SubDict, guestE
     ## Start Configuration Queries
     activeServerIcon = parseDB.getActiveServerSlotID(ctx.channel.id, dbQuery, defaultConfigQuery)
     inactiveServerIcon = parseDB.getInactiveServerSlotID(ctx.channel.id, dbQuery, defaultConfigQuery)
-    embedColor = parseDB.getEmbedColor(ctx.channel.id, dbQuery, defaultConfigQuery)
+    embedColorHex = parseDB.getEmbedColor(ctx.channel.id, dbQuery, defaultConfigQuery)
     mpaBlockNumber = parseDB.getMpaBlock(ctx.channel.id, dbQuery, defaultConfigQuery)
     classIcons = parseDB.getClassIcons(defaultConfigQuery)
+    embedColor = embedColorHex.lstrip('#')
+    # embedColor = (tuple(int(embedColor[i:i+2], 16) for i in (0, 2, 4)))
+    # embedRed = (embedColor[0])
+    # embedGreen = (embedColor[1])
+    # embedBlue = (embedColor[2])
+    embedColor = discord.Colour(value=int(embedColor, 16))
     ## End Configuration queries
     # Get the message object to edit
-    mpaMessageID = next(iter(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']))
-    mpaMessage = client.fetch_message(int(mpaMessageID))
     #hasAnMPABlock = False
     # Servers with a class.
+    for index, item in enumerate(EQList):
+        if item == f"PlaceHolder{ctx.channel.id}{listMessageID}":
+            EQList[index] = PlaceHolder("")
     for word in EQList:
         if (type(word) is PlaceHolder):
             # CHANGE: Call mpaConfig dict for this setting.
@@ -176,6 +200,12 @@ async def generateList(ctx, dbQuery, defaultConfigQuery, EQList, SubDict, guestE
             classRole = splitstr[0]
             if not classRole.startswith('<'):
                 classRole = classIcons['noclass']
+                if len(splitstr) < 2:
+                    player = splitstr[0]
+                else:
+                    player = splitstr[1]
+            else:
+                player = splitstr[1]
             ## I believe this was originally coded to handle some other action when a player is removed, but after some code changes this ended up just being the same task in every
             # if else block.. so this variable might actually not be needed anymore.
                 # if playerRemoved[ctx.channel.id] == True:
@@ -184,7 +214,7 @@ async def generateList(ctx, dbQuery, defaultConfigQuery, EQList, SubDict, guestE
                 # else:
             #     player = splitstr[1]
             # else:
-            player = splitstr[1]
+
             # CHANGE: Instead of activeserverIcons, use the emoji ID from the database. Can pass the dbQuery object and just query that variable here for the information.
             # if ctx.guild.id == serverIDDict['Ishana']:
             #     playerlist += (activeServerIcons[0] + ' ' + player + '\n')
@@ -226,12 +256,16 @@ async def generateList(ctx, dbQuery, defaultConfigQuery, EQList, SubDict, guestE
     em.add_field(name='Last Action', value=inputstring, inline=False)
     em.set_author(name='An MPA is starting!', icon_url=ctx.guild.icon_url)
     try:
-        await mpaMessage.edit(embed=em)
+        mpaMessage = await ctx.fetch_message(listMessageID)
+        await mpaMessage.edit(content='', embed=em)
     except (KeyError, discord.NotFound):
         print(ctx.author.name + ' Started an MPA on ' + ctx.guild.name)
+        mpaMessage = await ctx.fetch_message(listMessageID)
+        #await mpaMessage.send(embed=em)
+        traceback.print_exc(file=sys.stdout)
         #MPACount += 1
        # await client.get_channel(OtherIDDict['ControlPanel']).send('```css\n' + ctx.author.name + '#' + str(ctx.author.discriminator) + ' (ID: ' + str(ctx.author.id) + ') ' + 'Started an MPA on ' + ctx.guild.name + '\nAmount of Active MPAs: ' + str(MPACount) + '\nTimestamp: ' + str(datetime.now()) + '```')
         #print('Amount of Active MPAs: ' + str(MPACount))
-        mpaMessage = await ctx.channel.send('', embed=em)
+        #mpaMessage = await ctx.channel.send('', embed=em)
     except Exception:
         traceback.print_exc(file=sys.stdout)

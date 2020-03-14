@@ -165,7 +165,7 @@ def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled,
                 'guestEnabled': f"{str(guestEnabled)}",
                 'maxParticipants': f"{str(maxParticipants)}",
                 'participantCount': f"{str(participantCount)}",
-                'expirationDate': f"{expirationDate}",
+                'expirationDate': f"{expirationDate}"
             },
             ':timestamp': f"{timeStamp}"
         }
