@@ -6,13 +6,13 @@ ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 
 dynamodb = boto3.resource('dynamodb', region_name=f"{ConfigDict['DB-REGION']}")
-configTable = dynamodb.Table(f"{ConfigDict['DB-NAME']}")
+dbTable = dynamodb.Table(f"{ConfigDict['DB-NAME']}")
 
 def gidQueryDB(guildID):
-    return configTable.query(KeyConditionExpression=Key('guildID').eq(f'{guildID}'))
+    return dbTable.query(KeyConditionExpression=Key('guildID').eq(f'{guildID}'))
 
 def updateMpaChannels(guildID, newChannelID, timeStamp):
-    configTable.update_item(
+    dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
         },
@@ -26,11 +26,12 @@ def updateMpaChannels(guildID, newChannelID, timeStamp):
 # This function should only be used when the server has no MPA channels whatsoever.
 # The function is also used if the server does not already exist in the database.
 def addMpaChannel(guildID, newChannelID, timeStamp):
-    configTable.put_item(
+    dbTable.put_item(
         Item={
             'guildID': f"{guildID}",
             'mpaChannels': [f"{newChannelID}"],
-            'lastUpdated': f"{timeStamp}"
+            'lastUpdated': f"{timeStamp}",
+            'mpaConfig': {f"{newChannelID}": {}}
         }
     )
     return
@@ -38,7 +39,7 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
 # def updateMpaAutoExpirationChannels(guildID, newChannelID, dbQuery):
 #     try:
 #         if len(dbQuery['Items'][0]['mpaAutoExpirationChannels']) > 0:   
-#             configTable.update_item(
+#             dbTable.update_item(
 #             Key={
 #                 'guildID': f"{guildID}"
 #             },
@@ -48,7 +49,7 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
 #             }
 #             )
 #     except KeyError:
-#             configTable.update_item(
+#             dbTable.update_item(
 #             Key={
 #                 'guildID': f"{guildID}"
 #             },
@@ -61,7 +62,7 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
 
 
 def removeMpaChannel(guildID, channelIndex, timeStamp):
-    configTable.update_item(
+    dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
         },
@@ -74,8 +75,7 @@ def removeMpaChannel(guildID, channelIndex, timeStamp):
 
 
 def addMpaBlockNumber(guildID, channelID: str, blockNumber: str, timeStamp):
-    # Based on this thread with no real answer to the problem, https://forums.aws.amazon.com/thread.jspa?threadID=162907 it looks like I may have to make 2 requests in this function...
-    configTable.update_item(
+    dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
         },
@@ -85,20 +85,23 @@ def addMpaBlockNumber(guildID, channelID: str, blockNumber: str, timeStamp):
         },
         ExpressionAttributeValues={
             ':block': f"{blockNumber}",
-            ':timestamp': f"{timeStamp}",
-            ':empty': {"M:": {}}
+            ':timestamp': f"{timeStamp}"
         }
     )
     return
 
-# def removeMpaBlockNumber(guildID, channelID, blockNumber, timeStamp):
-#     configTable.update_item(
-#         Key={
-#             'guildID': f"{guildID}"
-#         },
-#         UpdateExpression=f"SET mpaConfig.{channelID}.mpaBlock = :block",
-#         ExpressionAttributeValues={
-#             ':block': f"{blockNumber}"
-#         }
-#     )
-#     return
+def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
+    dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"REMOVE mpaConfig.#channelID.mpaBlock SET lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}"
+        },
+        ExpressionAttributeValues={
+            ':timestamp': f"{timeStamp}"
+        }
+    )
+    return
+
