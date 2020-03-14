@@ -11,8 +11,6 @@ import datetime
 import json
 import shlex
 import time
-import boto3
-from boto3.dynamodb.conditions import Key
 from datetime import datetime
 from discord.utils import find
 from discord.ext import commands
@@ -558,8 +556,8 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
 # Closes out the MPA and flushes related data so another MPA can be opened in the same channel at a later date.
 @client.command(name='removempa')
 async def cmd_removempa(ctx):
-    if message.author.top_role.permissions.manage_emojis or message.author.top_role.permissions.administrator or message.author.id == client.user.id:
-        await function_removempa(ctx.message)
+    if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
+        await mpaControl.removempa(ctx)
     else:
         await ctx.send('You do not have permissions to remove the mpa.')
 

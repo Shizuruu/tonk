@@ -4,15 +4,11 @@ assetsTonk/TonkTestConfig.json
 assetsTonk/Tonk*Config.json
 assetsTonk/__pycache__/
 assetsTonk/mpaAutoExpiration.json
-Archived/
 *.png
 *.jpg
-faketonk.py
 *.bak
 *mpa*.json
 .idea/
 assetsTonk/jsonDB/
 assetsTonk/configs/
 assetsTonk/devDB/
-tonk_diagram
-TonkFutureStatePlans.txt
