@@ -59,19 +59,22 @@ def findRoleID(roleName, message):
 async def isManager(ctx):
     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
     mpaManagerRoles = parseDB.getMpaManagerRoles(ctx.channel.id, dbQuery)
+    if mpaManagerRoles is IndexError:
+        await ctx.send('This channel is not an MPA Channel. You can enable the AAAMPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        return None
     # Case: Channel manager roles is configured
-    if type(mpaManagerRoles['channelManagerRoles']) is not None:
+    if mpaManagerRoles['channelManagerRoles'] is not None:
         # Return true if the user's role is in either channel OR server manager roles, else return false
-        if ctx.author.roles.id in mpaManagerRoles['channelManagerRoles']:
+        if ctx.author.top_role.id in mpaManagerRoles['channelManagerRoles']:
             return True
-        elif type(mpaManagerRoles['serverManagerRoles']) is not None:
-            if ctx.author.roles.id in mpaManagerRoles['serverManagerRoles']:
+        elif (mpaManagerRoles['serverManagerRoles']) is not None:
+            if ctx.author.top_role.id in mpaManagerRoles['serverManagerRoles']:
                 return True
         # These if statements should be ending the function on the return statement, if none of those conditions are met we return false.
         return False
     # Case: Channel manager roles is NOT configured, but server manager roles are
-    elif type(mpaManagerRoles['serverManagerRoles']) is not None:
-        if ctx.author.roles.id in mpaManagerRoles['serverManagerRoles']:
+    elif mpaManagerRoles['serverManagerRoles'] is not None:
+        if ctx.author.top_role.id in mpaManagerRoles['serverManagerRoles']:
             return True
     return False
 
@@ -292,8 +295,8 @@ async def cmd_ffs(ctx):
 # Calls function_startmpa to actually do the legwork
 @client.command(name='startmpa')
 async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
-    isManager = mpaControl.isManager(ctx)
-    if isManager or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
         # This checks if Tonk has the deleting permission. If it doesn't, don't run the script at all and just stop.
         try:
             await ctx.message.delete()
@@ -302,15 +305,15 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
             await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
             return
         await mpaControl.startmpa(ctx, message, mpaType)
-    else:
+    elif hasManagerPermissions is not None:
         await ctx.send('You do not have permissions to use this command.')
 # Closes out the MPA and flushes related data so another MPA can be opened in the same channel at a later date.
 @client.command(name='removempa')
 async def cmd_removempa(ctx):
-    isManager = mpaControl.isManager(ctx)
-    if isManager or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
         await mpaControl.removempa(ctx)
-    else:
+    elif hasManagerPermissions is not None:
         await ctx.send('You do not have permissions to remove the mpa.')
 
 # Adds the user into the EQ list in the EQ channel. Optionally takes a class as an arguement. If one is passed, add the class icon and the user's name into the EQ list.
@@ -322,11 +325,11 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
 # Manager command that adds a custom name to the MPA.
 @client.command(name='add', aliases=['reserve'])
 async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
-    isManager = mpaControl.isManager(ctx)
-    if isManager or ctx.author.top_role.permissions.administrator:
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
         await mpaControl.addUser(ctx, user, mpaArg)
         return
-    else:
+    elif hasManagerPermissions is not None:
         await ctx.send('You do not have permissions to use this command.')
 
 # Removes the caller from the MPA.
@@ -338,11 +341,11 @@ async def cmd_removeme(ctx):
 # Manager command to remove a user from the MPA.
 @client.command(name='remove')
 async def cmd_remove(ctx, user):
-    isManager = mpaControl.isManager(ctx)
-    if isManager or ctx.author.top_role.permissions.administrator:
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
         await mpaControl.removeUser(ctx, user)
         return
-    else:
+    elif hasManagerPermissions is not None:
         await ctx.send('You do not have permissions to use this command.')
 
 # Changes the class of the caller to another one they specify. Or none if they call for none of the classes.

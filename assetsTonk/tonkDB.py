@@ -19,10 +19,15 @@ def updateMpaChannels(guildID, newChannelID, timeStamp):
         Key={
             'guildID': f"{guildID}"
         },
-        UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel), lastUpdated = :timestamp",
+        UpdateExpression="SET mpaChannels = list_append(mpaChannels, :newmpachannel), mpaConfig.#newChannelID = :mpaConfig, activeMPAs.#newChannelID = :activeMPAs, lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#newChannelID': f"{newChannelID}"
+        },
         ExpressionAttributeValues={
             ':newmpachannel': [f"{newChannelID}"],
-            ':timestamp': [f"{timeStamp}"]
+            ':timestamp': [f"{timeStamp}"],
+            ':mpaConfig': {},
+            ':activeMPAs': {}
         }
     )
     return

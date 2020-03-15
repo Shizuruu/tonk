@@ -69,3 +69,5 @@ def getMpaManagerRoles(channelID: str, dbQuery):
         mpaManagerDict['channelManagerRoles'] = None
         mpaManagerDict['serverManagerRoles'] = None
         return mpaManagerDict
+    except IndexError:
+        return IndexError
