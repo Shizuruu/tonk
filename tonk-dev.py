@@ -32,66 +32,66 @@ APIKey = ConfigDict['APIKEY']
 
 start = time.time()
 # Main ist to track the actual MPA list
-EQTest = {}
-# Dictionary that tracks reserves list per MPA
-SubDict = {}
-# Some servers lock out non-approved roles that they request. Otherwise, this is ignored for any other servers.
-# In short, this is a flag for these special servers to say if having non-approved roles are allowed or not.
-guestEnabled = {}
-# The message that displays the list for an MPA.
-EQPostDict = {}
-# The total count of MPAs that are active in this bot's running instance
-MPACount = 0
-# A counter that shows how many users are in an MPA
-participantCount = {}
-# A flag that reduces the total MPA size if a certain flag is passed when creating an MPA.
-eightMan = {}
-# An internal flag that tells the bot that a role has been added per channel ID
-#roleAdded = {} - DEPRECATED
-# Color of the embed per server (uses default if no special color was requested)
-color = {}
-# An internal flag that tells the bot if a player was removed from a server's MPA
-# Deprecated?
-#playerRemoved = {}
-# Tracks the total people per MPA, changes only if the eightMan flag was set to true for an MPA.
-totalPeople = {}
-# The expiration time for a given MPA
-expirationDate = {}
-# The database for scheduled MPAs, separated by channel IDs
-mpaScheduleDict = {}
-# Internal flag
-mpaRemoved = {}
-# Internal flag
-appended = False
+# EQTest = {}
+# # Dictionary that tracks reserves list per MPA
+# SubDict = {}
+# # Some servers lock out non-approved roles that they request. Otherwise, this is ignored for any other servers.
+# # In short, this is a flag for these special servers to say if having non-approved roles are allowed or not.
+# guestEnabled = {}
+# # The message that displays the list for an MPA.
+# EQPostDict = {}
+# # The total count of MPAs that are active in this bot's running instance
+# MPACount = 0
+# # A counter that shows how many users are in an MPA
+# participantCount = {}
+# # A flag that reduces the total MPA size if a certain flag is passed when creating an MPA.
+# eightMan = {}
+# # An internal flag that tells the bot that a role has been added per channel ID
+# #roleAdded = {} - DEPRECATED
+# # Color of the embed per server (uses default if no special color was requested)
+# color = {}
+# # An internal flag that tells the bot if a player was removed from a server's MPA
+# # Deprecated?
+# #playerRemoved = {}
+# # Tracks the total people per MPA, changes only if the eightMan flag was set to true for an MPA.
+# totalPeople = {}
+# # The expiration time for a given MPA
+# expirationDate = {}
+# # The database for scheduled MPAs, separated by channel IDs
+# mpaScheduleDict = {}
+# # Internal flag
+# mpaRemoved = {}
+# # Internal flag
+# appended = False
 
 commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
 client = commands.Bot(command_prefix=commandPrefix)
 # Remove the default help command
 client.remove_command('help')
 lastRestart = str(datetime.now())
-# Used with MPACount
-ActiveMPA = list()
-# Time in seconds until the MPA auto deletes itself
-mpaExpirationCounter = 3500
-# Time in seconds before the bot warns about inactivity and the deletion notice
-mpaWarningCounter = 15
-# Constants Dictionary
-serverIDDict = {
-"Ishana": 159184581830901761, 
-"Okra": 153346891109761024,
-"Bloop": 226835458552758275,
-"RappyCasino": 410601412620320819,
-"SupportServer": 518836534875652106
-}
-OtherIDDict = {
-"Tenj": 153273725666590720,
-"ControlPanel": 322466466479734784,
-"EmojiStorage": 408395363762962432
-}
+# # Used with MPACount
+# ActiveMPA = list()
+# # Time in seconds until the MPA auto deletes itself
+# mpaExpirationCounter = 3500
+# # Time in seconds before the bot warns about inactivity and the deletion notice
+# mpaWarningCounter = 15
+# # Constants Dictionary
+# serverIDDict = {
+# "Ishana": 159184581830901761, 
+# "Okra": 153346891109761024,
+# "Bloop": 226835458552758275,
+# "RappyCasino": 410601412620320819,
+# "SupportServer": 518836534875652106
+# }
+# OtherIDDict = {
+# "Tenj": 153273725666590720,
+# "ControlPanel": 322466466479734784,
+# "EmojiStorage": 408395363762962432
+# }
 
-RoleIDDict = {
-"IshanaFamilia": 486809791948259328
-}
+# RoleIDDict = {
+# "IshanaFamilia": 486809791948259328
+# }
 
 
 
@@ -110,118 +110,118 @@ def findRoleID(roleName, message):
     else:
         return 0
 
-print ('Loading configuration database...')
+# print ('Loading configuration database...')
 
-# Create dummy dicts
-mpaChannels = {}
-mpaExpirationConfig = {}
-mpaScheduleDict = {}
-mpaBlockConfigDict = {}
+# # Create dummy dicts
+# mpaChannels = {}
+# mpaExpirationConfig = {}
+# mpaScheduleDict = {}
+# mpaBlockConfigDict = {}
 
-# Functions that re-imports the Json Data to the dictionaries
-def loadmpaChannels():
-    global mpaChannels
-    mpachannelsJsonFile = open('assetsTonk/devDB/mpaChannelsDev.json')
-    mpachannelsJsonFileRead = mpachannelsJsonFile.read()
-    mpaChannels = json.loads(mpachannelsJsonFileRead)
-    print ('MPA Channels database loaded!')
+# # Functions that re-imports the Json Data to the dictionaries
+# def loadmpaChannels():
+#     global mpaChannels
+#     mpachannelsJsonFile = open('assetsTonk/devDB/mpaChannelsDev.json')
+#     mpachannelsJsonFileRead = mpachannelsJsonFile.read()
+#     mpaChannels = json.loads(mpachannelsJsonFileRead)
+#     print ('MPA Channels database loaded!')
 
-def loadmpaAutoExpiration():
-    global mpaExpirationConfig
-    mpaExpirationJsonFile = open('assetsTonk/devDB/mpaAutoExpirationDev.json')
-    mpaExpirationJsonFileRead = mpaExpirationJsonFile.read()
-    mpaExpirationConfig = json.loads(mpaExpirationJsonFileRead)
-    print ('MPA Auto expiration configs loaded!')
+# def loadmpaAutoExpiration():
+#     global mpaExpirationConfig
+#     mpaExpirationJsonFile = open('assetsTonk/devDB/mpaAutoExpirationDev.json')
+#     mpaExpirationJsonFileRead = mpaExpirationJsonFile.read()
+#     mpaExpirationConfig = json.loads(mpaExpirationJsonFileRead)
+#     print ('MPA Auto expiration configs loaded!')
 
-def loadscheduledMpa():
-    global mpaScheduleDict
-    scheduledMpaFile = open('assetsTonk/devDB/scheduledMpaDev.json')
-    scheduledMpaFileRead = scheduledMpaFile.read()
-    mpaScheduleDict = json.loads(scheduledMpaFileRead)
-    print ('Scheduled MPA Database loaded!')
+# def loadscheduledMpa():
+#     global mpaScheduleDict
+#     scheduledMpaFile = open('assetsTonk/devDB/scheduledMpaDev.json')
+#     scheduledMpaFileRead = scheduledMpaFile.read()
+#     mpaScheduleDict = json.loads(scheduledMpaFileRead)
+#     print ('Scheduled MPA Database loaded!')
 
-def loadmpaBlockConfigs():
-    global mpaBlockConfigDict
-    mpaBlockConfigJsonFile = open('assetsTonk/devDB/mpaBlocksdbDev.json')
-    mpaBlockConfigFileRead = mpaBlockConfigJsonFile.read()
-    mpaBlockConfigDict = json.loads(mpaBlockConfigFileRead)
-    print ('MPA block configs loaded!')
+# def loadmpaBlockConfigs():
+#     global mpaBlockConfigDict
+#     mpaBlockConfigJsonFile = open('assetsTonk/devDB/mpaBlocksdbDev.json')
+#     mpaBlockConfigFileRead = mpaBlockConfigJsonFile.read()
+#     mpaBlockConfigDict = json.loads(mpaBlockConfigFileRead)
+#     print ('MPA block configs loaded!')
 
 # These functions dump the dictionary when something gets written to the dictionary.
-def dumpMpaChannels(dictdata):
-    with open('assetsTonk/devDB/mpaChannelsDev.json', 'w') as fp:
-        json.dump(dictdata, fp)
-    fp.close()
-    loadmpaChannels()
-    return
-def dumpMpaAutoExpiration(dictdata):
-    with open("assetsTonk/devDB/mpaAutoExpirationDev.json", 'w') as fp:
-        json.dump(mpaExpirationConfig, fp)
-    fp.close()
-    loadmpaAutoExpiration()
-    return
-def dumpScheduledMpa(dictdata):
-    with open('assetsTonk/devDB/scheduledMpaDev.json', 'w') as fp:
-        json.dump(mpaScheduleDict, fp)
-    fp.close()
-    return
-def dumpMpaBlockConfig(dictdata):
-    with open("assetsTonk/devDB/mpaBlocksdbDev.json", 'w') as fp:
-        json.dump(mpaBlockConfigDict, fp)
-    fp.close()
-    loadmpaBlockConfigs()
-    return
+# def dumpMpaChannels(dictdata):
+#     with open('assetsTonk/devDB/mpaChannelsDev.json', 'w') as fp:
+#         json.dump(dictdata, fp)
+#     fp.close()
+#     loadmpaChannels()
+#     return
+# def dumpMpaAutoExpiration(dictdata):
+#     with open("assetsTonk/devDB/mpaAutoExpirationDev.json", 'w') as fp:
+#         json.dump(mpaExpirationConfig, fp)
+#     fp.close()
+#     loadmpaAutoExpiration()
+#     return
+# def dumpScheduledMpa(dictdata):
+#     with open('assetsTonk/devDB/scheduledMpaDev.json', 'w') as fp:
+#         json.dump(mpaScheduleDict, fp)
+#     fp.close()
+#     return
+# def dumpMpaBlockConfig(dictdata):
+#     with open("assetsTonk/devDB/mpaBlocksdbDev.json", 'w') as fp:
+#         json.dump(mpaBlockConfigDict, fp)
+#     fp.close()
+#     loadmpaBlockConfigs()
+#     return
 
-# Reloads all the data files.
-def runDataLoadup():
-    print ('Running data loadup!')
-    loadmpaChannels()
-    loadmpaAutoExpiration()
-    loadscheduledMpa()
-    loadmpaBlockConfigs()
+# # Reloads all the data files.
+# def runDataLoadup():
+#     print ('Running data loadup!')
+#     loadmpaChannels()
+#     loadmpaAutoExpiration()
+#     loadscheduledMpa()
+#     loadmpaBlockConfigs()
 
-runDataLoadup()
+# runDataLoadup()
 
 
-print ('Loading classes list...\n')  
+# print ('Loading classes list...\n')  
   
-with open("assetsTonk/iconLists/classes.txt",'r') as e:
-    classesread = e.readlines()
-    classes = []
-    for i in classesread:
-        classes.append(i.strip())
-        print (i.strip())
+# with open("assetsTonk/iconLists/classes.txt",'r') as e:
+#     classesread = e.readlines()
+#     classes = []
+#     for i in classesread:
+#         classes.append(i.strip())
+#         print (i.strip())
 
-with open("assetsTonk/iconLists/heroClasses.txt",'r') as e:
-    classesread = e.readlines()
-    heroClasses = []
-    for i in classesread:
-        heroClasses.append(i.strip())
-        print (i.strip())
+# with open("assetsTonk/iconLists/heroClasses.txt",'r') as e:
+#     classesread = e.readlines()
+#     heroClasses = []
+#     for i in classesread:
+#         heroClasses.append(i.strip())
+#         print (i.strip())
 
-with open("assetsTonk/iconLists/subbableheroClasses.txt",'r') as e:
-    classesread = e.readlines()
-    subbableHeroClasses = []
-    for i in classesread:
-        subbableHeroClasses.append(i.strip())
-        print (i.strip())
+# with open("assetsTonk/iconLists/subbableheroClasses.txt",'r') as e:
+#     classesread = e.readlines()
+#     subbableHeroClasses = []
+#     for i in classesread:
+#         subbableHeroClasses.append(i.strip())
+#         print (i.strip())
 
-BlankMpaClass = classMatch.findClass('NoneAtAll')
-print ('Classes loaded.\n')
+# BlankMpaClass = classMatch.findClass('NoneAtAll')
+# print ('Classes loaded.\n')
 
-#getTime = datetime.now()
+# #getTime = datetime.now()
 
-with open("assetsTonk/iconLists/activeServerSlots.txt",'r') as e:
-    assRead = e.readlines()
-    activeServerIcons = []
-    for i in assRead:
-        activeServerIcons.append(i.strip())
+# with open("assetsTonk/iconLists/activeServerSlots.txt",'r') as e:
+#     assRead = e.readlines()
+#     activeServerIcons = []
+#     for i in assRead:
+#         activeServerIcons.append(i.strip())
         
-with open("assetsTonk/iconLists/grayServerSlots.txt",'r') as e:
-    iassRead = e.readlines()
-    inactiveServerIcons = []
-    for i in iassRead:
-        inactiveServerIcons.append(i.strip())
+# with open("assetsTonk/iconLists/grayServerSlots.txt",'r') as e:
+#     iassRead = e.readlines()
+#     inactiveServerIcons = []
+#     for i in iassRead:
+#         inactiveServerIcons.append(i.strip())
 
 
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
@@ -1418,10 +1418,10 @@ async def on_ready():
         await client.get_channel(322466466479734784).send(f'Tonk-Dev is now {onlineRole.mention}' + '\nStartup time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(loadupTime)) + '\nConnected to **' + str(connectedServers) + '** servers' + '\nLast Restarted: ' + lastRestart)
     else:
         await client.get_channel(322466466479734784).send(f'Tonk has {reconnectRole.mention}')
-    while True:
-        await expiration_checker()
-        await mpa_schedulerclock()
-        await asyncio.sleep(1)
+    # while True:
+    #     await expiration_checker()
+    #     await mpa_schedulerclock()
+    #     await asyncio.sleep(1)
 
 # Global command handler
 #@client.event

@@ -15,39 +15,39 @@ from assetsTonk import parseDB
 from assetsTonk import MpaMatchDev
 from assetsTonk import classMatchDev as classMatch
 
-class PlaceHolder():
-    def __init__(self, name):
-        self.name = name
-    def __str__(self):
-        return str(self.name)
+# class PlaceHolder():
+#     def __init__(self, name):
+#         self.name = name
+#     def __str__(self):
+#         return str(self.name)
 
 def is_pinned(m):
    return m.pinned != True
 
 # Converts EQ List Placeholder objects to strings and then updates the DB with the new batch of information.
 async def convertAndUpdateMPADBTable(ctx, listMessage, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate):
-    if any(isinstance(EQItem, PlaceHolder) for EQItem in EQList):
-        for index, item in enumerate(EQList):
-            if isinstance(item, PlaceHolder):
-                EQList[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
+    # if any(isinstance(EQItem, PlaceHolder) for EQItem in EQList):
+    #     for index, item in enumerate(EQList):
+    #         if isinstance(item, PlaceHolder):
+    #             EQList[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
     tonkDB.updateMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQList, SubList, privateMpa, participantCount, maxParticipants, str(expirationDate), str(datetime.utcnow()))
     return
 
 # Same as above but this appends the MPA Start date onto the DB, which is used for message cleanup commands.
 # Should be only used by the startmpa command.
 async def convertAndStartMPADBTable(ctx, listMessage, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate, startDate):
-    if any(isinstance(EQItem, PlaceHolder) for EQItem in EQList):
-        for index, item in enumerate(EQList):
-            if isinstance(item, PlaceHolder):
-                EQList[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
+    # if any(isinstance(EQItem, PlaceHolder) for EQItem in EQList):
+    #     for index, item in enumerate(EQList):
+    #         if isinstance(item, PlaceHolder):
+    #             EQList[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
     tonkDB.startMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQList, SubList, privateMpa, participantCount, maxParticipants, str(expirationDate), startDate)
     return
 
-async def convertEQListFromDB(ctx, messageID, EQList):
-    for index, item in enumerate(EQList):
-        if item == f"PlaceHolder{ctx.channel.id}{messageID}":
-            EQList[index] = PlaceHolder("")
-    return EQList
+# async def convertEQListFromDB(ctx, messageID, EQList):
+#     for index, item in enumerate(EQList):
+#         if item == f"PlaceHolder{ctx.channel.id}{messageID}":
+#             EQList[index] = PlaceHolder("")
+#     return EQList
 
 # Function to start an MPA. The message arguement takes the Discord Message object instead of a string. The string is passed to the broadcast arguement
 async def startmpa(ctx, broadcast, mpaType):
@@ -102,17 +102,19 @@ async def startmpa(ctx, broadcast, mpaType):
                     else:
                         expirationDate = ''
                     for indexEQTest in range(maxParticipant):
-                        EQTest.append(PlaceHolder(""))
+                        #EQTest.append(PlaceHolder(""))
+                        EQTest.append(f"PlaceHolder{ctx.channel.id}{listMessage.id}")
                     startDate = datetime.utcnow()
                     # Since we cannot send placeholder objects up to the database, we convert them into a special string that will be traded out upon query.
                     # if any(isinstance(EQItem, PlaceHolder) for EQItem in EQTest):
                     #     for index, item in enumerate(EQTest):
                     #         if isinstance(item, PlaceHolder):
                     #             EQTest[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
-                    # Update the DB with the MPA data
-                    await convertAndStartMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate, startDate)
                     #tonkDB.startMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQTest, SubDict, privateMpa, participantCount, maxParticipant, str(expirationDate), startDate)
                     await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
+                    # Update the DB with the MPA data
+                    await convertAndStartMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate, startDate)
+                    return
                 except discord.Forbidden:
                     print (ctx.author.name + f'Tried to start an MPA at {ctx.guild.name}, but failed.')
                     await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
@@ -120,6 +122,7 @@ async def startmpa(ctx, broadcast, mpaType):
 
             else:
                 await ctx.channel.send('You do not have the permission to do that, starfox.')
+                return
         else:
             for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
                 listMessageID = int(key)
@@ -179,7 +182,7 @@ async def addme(ctx, mpaArg: str = 'none'):
         activeMPAList = dbQuery['Items'][0]['activeMPAs']
         participantCount = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
         EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-        EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
+        #EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
         SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
         listMessage = await ctx.fetch_message(listMessageID)
         maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
@@ -192,7 +195,6 @@ async def addme(ctx, mpaArg: str = 'none'):
         heroClasses = parseDB.getHeroClasses(defaultConfigQuery)
         subbableHeroClasses = parseDB.getSubbableHeroClasses(defaultConfigQuery)
         allowedMpaRoles = []
-        # Now we need to convert the placeholder strings pulled from the DB over to PlaceHolder objects.
         if bool(privateMpa):
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, dbQuery, defaultConfigQuery)
     except KeyError as e:
@@ -216,7 +218,8 @@ async def addme(ctx, mpaArg: str = 'none'):
             if activeMPAList[f'{str(ctx.channel.id)}']:
                 # Determine if the user is already in the MPA List or not.
                 for index, item in enumerate(EQTest):
-                    if (type(EQTest[index]) is PlaceHolder):
+                   # if (type(EQTest[index]) is PlaceHolder):
+                    if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                         pass
                     elif ctx.author.name in item:
                         personInMPA = True
@@ -271,12 +274,14 @@ async def addme(ctx, mpaArg: str = 'none'):
                     return
                 await ctx.message.delete()
                 for index, word in enumerate(EQTest):
-                    if isinstance(word, PlaceHolder):
+                    #if isinstance(word, PlaceHolder):
+                    if (word == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                         if personInMPA == False:
                             # Is the user in the reserve list?
                             if (ctx.author.name in SubDict):
                                 index = SubDict.index(ctx.author.name)
-                                if isinstance(EQTest[index], PlaceHolder):
+                                #if isinstance(EQTest[index], PlaceHolder):
+                                if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                                     EQTest.pop(index)
                                     EQTest[index] = classRole + '|' + SubDict.pop(index)
                                     participantCount += 1
@@ -285,7 +290,8 @@ async def addme(ctx, mpaArg: str = 'none'):
                                     break
                             # If user is not in the sublist then we will treat the user as a new member being added in the list.
                             else:
-                                if isinstance(EQTest[index], PlaceHolder):
+                                #if isinstance(EQTest[index], PlaceHolder):
+                                if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                                     EQTest.pop(index)
                                     EQTest.insert(index, classRole + '|' + ctx.author.name)
                                     participantCount += 1
@@ -331,7 +337,7 @@ async def addUser(ctx, user, mpaArg):
             activeMPAList = dbQuery['Items'][0]['activeMPAs']
             participantCount = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
             EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-            EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
+           # EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
             SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
             listMessage = await ctx.fetch_message(listMessageID)
             maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
@@ -344,7 +350,6 @@ async def addUser(ctx, user, mpaArg):
             heroClasses = parseDB.getHeroClasses(defaultConfigQuery)
             subbableHeroClasses = parseDB.getSubbableHeroClasses(defaultConfigQuery)
             allowedMpaRoles = []
-            # Now we need to convert the placeholder strings pulled from the DB over to PlaceHolder objects.
             if bool(privateMpa):
                 allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, dbQuery, defaultConfigQuery)
         except KeyError as e:
@@ -406,9 +411,11 @@ async def addUser(ctx, user, mpaArg):
                         await convertAndUpdateMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate)
                         return
                     for index, word in enumerate(EQTest):
-                        if isinstance(word, PlaceHolder):
+                        #if isinstance(word, PlaceHolder):
+                        if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                             if not user in EQTest:
-                                if isinstance(EQTest[index], PlaceHolder):
+                                #if isinstance(EQTest[index], PlaceHolder):
+                                if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                                     EQTest.pop(index)
                                     EQTest.insert(index, classRole + '|' + user)
                                     participantCount += 1
@@ -445,7 +452,7 @@ async def removeme(ctx):
         activeMPAList = dbQuery['Items'][0]['activeMPAs']
         participantCount = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
         EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-        EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
+      #  EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
         SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
         listMessage = await ctx.fetch_message(listMessageID)
         maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
@@ -470,12 +477,14 @@ async def removeme(ctx):
                 expirationDate = ''
             await ctx.message.delete()
             for index, item in enumerate(EQTest):
-                if (type(EQTest[index]) is PlaceHolder):
+                #if (type(EQTest[index]) is PlaceHolder):
+                if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                     pass
                 # If the user is found in the MPA list, remove that item from the list and then push the change to the DB.
                 elif ctx.author.name in item:
                     EQTest.pop(index)
-                    EQTest.insert(index, PlaceHolder(''))
+                    #EQTest.insert(index, PlaceHolder(''))
+                    EQTest.insert(index, f"PlaceHolder{ctx.channel.id}{listMessage.id}")
                     participantCount -= 1
                    # playerRemoved[ctx.channel.id] = True
                     await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, f'```diff\n- Removed {ctx.author.name} from the MPA list```')
@@ -517,7 +526,7 @@ async def removeUser(ctx, user):
         activeMPAList = dbQuery['Items'][0]['activeMPAs']
         participantCount = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
         EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-        EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
+      #  EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
         SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
         listMessage = await ctx.fetch_message(listMessageID)
         maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
@@ -543,14 +552,16 @@ async def removeUser(ctx, user):
             if len(EQTest):
                     for index in range(len(EQTest)):
                         appended = False
-                        if (type(EQTest[index]) is PlaceHolder):
+                        #if (type(EQTest[index]) is PlaceHolder):
+                        if (EQTest[index] == f"PlaceHolder{ctx.channel.id}{listMessage.id}"):
                             pass
                         elif user.lower() in EQTest[index].lower():
                             # Why so much overhead? Because an item in the EQTest list contains both class information and the name of the user, separated by a | character. So we need to split them up and only use the name part of the item.
                             toBeRemoved = EQTest[index]
                             EQTest[index] = user
                             EQTest.remove(user)
-                            EQTest.insert(index, PlaceHolder(''))
+                           # EQTest.insert(index, PlaceHolder(''))
+                            EQTest.insert(index, f"PlaceHolder{ctx.channel.id}{listMessage.id}")
                             user = user
                             participantCount -= 1
                             #playerRemoved[ctx.channel.id] = True
@@ -617,9 +628,10 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
     embedColor = embedColorHex.lstrip('#')
     embedColor = discord.Colour(value=int(embedColor, 16))
     ## End Configuration queries
-    EQList = await convertEQListFromDB(ctx, listMessageID, EQList)
+   # EQList = await convertEQListFromDB(ctx, listMessageID, EQList)
     for word in EQList:
-        if (type(word) is PlaceHolder):
+        #if (type(word) is PlaceHolder):
+        if (word == f"PlaceHolder{ctx.channel.id}{listMessageID}"):
             playerlist += (f'{inactiveServerIcon}\n')
             classlist += (f"{classIcons['noclass']}\n")
         else:
