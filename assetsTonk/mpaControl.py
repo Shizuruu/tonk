@@ -8,7 +8,6 @@ import sys
 import re
 from datetime import datetime
 from dateutil.parser import parse
-#from discord.ext import commands
 
 from assetsTonk import tonkDB
 from assetsTonk import parseDB
@@ -114,15 +113,8 @@ async def startmpa(ctx, broadcast, mpaType):
                     else:
                         expirationDate = ''
                     for indexEQTest in range(maxParticipant):
-                        #EQTest.append(PlaceHolder(""))
                         EQTest.append(f"PlaceHolder{ctx.channel.id}{listMessage.id}")
                     startDate = datetime.utcnow()
-                    # Since we cannot send placeholder objects up to the database, we convert them into a special string that will be traded out upon query.
-                    # if any(isinstance(EQItem, PlaceHolder) for EQItem in EQTest):
-                    #     for index, item in enumerate(EQTest):
-                    #         if isinstance(item, PlaceHolder):
-                    #             EQTest[index] = f"PlaceHolder{ctx.channel.id}{listMessage.id}"
-                    #tonkDB.startMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQTest, SubDict, privateMpa, participantCount, maxParticipant, str(expirationDate), startDate)
                     await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
                     # Update the DB with the MPA data
                     await convertAndStartMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate, startDate)
@@ -197,38 +189,6 @@ async def addme(ctx, mpaArg: str = 'none'):
         elif mpaDBDict is IndexError:
             await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
         return
-    # try:
-    #     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-    #     defaultConfigQuery = tonkDB.configDefaultQueryDB()
-    #     for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
-    #         listMessageID = int(key)
-    #         break
-    #     # Load the existing MPA Data from the DB
-    #     mpaChannelList = dbQuery['Items'][0]['mpaChannels']
-    #     activeMPAList = dbQuery['Items'][0]['activeMPAs']
-    #     participantCount = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
-    #     EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-    #     #EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
-    #     SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
-    #     listMessage = await ctx.fetch_message(listMessageID)
-    #     maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-    #     privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     # Load configuration flags for the MPA
-    #     mpaExpirationEnabled = parseDB.getMpaExpirationEnabled(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     mpaExpirationTime = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     # Load static variables from the defaults table
-    #     classIcons = parseDB.getClassIcons(defaultConfigQuery)
-    #     heroClasses = parseDB.getHeroClasses(defaultConfigQuery)
-    #     subbableHeroClasses = parseDB.getSubbableHeroClasses(defaultConfigQuery)
-    #     allowedMpaRoles = []
-    #     if bool(privateMpa):
-    #         allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, dbQuery, defaultConfigQuery)
-    # except KeyError as e:
-    #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-    #     return
-    # except IndexError as e:
-    #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-    #     return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         for index in range(len(ctx.author.roles)):
             if bool(mpaDBDict['privateMpa']):
@@ -244,7 +204,6 @@ async def addme(ctx, mpaArg: str = 'none'):
             if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
                 # Determine if the user is already in the MPA List or not.
                 for index, item in enumerate(mpaDBDict['EQTest']):
-                   # if (type(EQTest[index]) is PlaceHolder):
                     if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                         pass
                     elif ctx.author.name in item:
@@ -300,13 +259,11 @@ async def addme(ctx, mpaArg: str = 'none'):
                     return
                 await ctx.message.delete()
                 for index, word in enumerate(mpaDBDict['EQTest']):
-                    #if isinstance(word, PlaceHolder):
                     if (word == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                         if personInMPA == False:
                             # Is the user in the reserve list?
                             if (ctx.author.name in mpaDBDict['SubDict']):
                                 index = mpaDBDict['SubDict'].index(ctx.author.name)
-                                #if isinstance(EQTest[index], PlaceHolder):
                                 if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                                     mpaDBDict['EQTest'].pop(index)
                                     EQTest[index] = classRole + '|' + mpaDBDict['SubDict'].pop(index)
@@ -316,7 +273,6 @@ async def addme(ctx, mpaArg: str = 'none'):
                                     break
                             # If user is not in the sublist then we will treat the user as a new member being added in the list.
                             else:
-                                #if isinstance(EQTest[index], PlaceHolder):
                                 if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                                     mpaDBDict['EQTest'].pop(index)
                                     mpaDBDict['EQTest'].insert(index, classRole + '|' + ctx.author.name)
@@ -326,7 +282,6 @@ async def addme(ctx, mpaArg: str = 'none'):
                                     break
                         else:
                             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], "```fix\nYou are already in the MPA```")
-                           # roleAdded[ctx.channel.id] = False
                             break
                 if not appended:
                     if personInMPA == False: 
@@ -366,38 +321,6 @@ async def addUser(ctx, user, mpaArg):
             elif mpaDBDict is IndexError:
                 await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
             return
-        # try:
-        #     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-        #     defaultConfigQuery = tonkDB.configDefaultQueryDB()
-        #     for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
-        #         listMessageID = int(key)
-        #         break
-        #     # Load the existing MPA Data from the DB
-        #     mpaChannelList = dbQuery['Items'][0]['mpaChannels']
-        #     activeMPAList = dbQuery['Items'][0]['activeMPAs']
-        #     participantCount = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
-        #     EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-        #    # EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
-        #     SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
-        #     listMessage = await ctx.fetch_message(listMessageID)
-        #     maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-        #     privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
-        #     # Load configuration flags for the MPA
-        #     mpaExpirationEnabled = parseDB.getMpaExpirationEnabled(ctx.channel.id, dbQuery, defaultConfigQuery)
-        #     mpaExpirationTime = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
-        #     # Load static variables from the defaults table
-        #     classIcons = parseDB.getClassIcons(defaultConfigQuery)
-        #     heroClasses = parseDB.getHeroClasses(defaultConfigQuery)
-        #     subbableHeroClasses = parseDB.getSubbableHeroClasses(defaultConfigQuery)
-        #     allowedMpaRoles = []
-        #     if bool(privateMpa):
-        #         allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, dbQuery, defaultConfigQuery)
-        # except KeyError as e:
-        #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-        #     return
-        # except IndexError as e:
-        #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-        #     return
         classRole = ''
         if str(ctx.channel.id) in mpaDBDict['mpaChannelList']:
             if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
@@ -432,7 +355,6 @@ async def addUser(ctx, user, mpaArg):
                         else:
                             mpaClass = classMatch.findClass(mpaArg)
                             classRole = classIcons[mpaClass]
-                    #    roleAdded[ctx.channel.id] = True
                     if mpaDBDict['mpaExpirationEnabled']:
                         expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
                     else:
@@ -451,10 +373,8 @@ async def addUser(ctx, user, mpaArg):
                         await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
                         return
                     for index, word in enumerate(mpaDBDict['EQTest']):
-                        #if isinstance(word, PlaceHolder):
                         if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                             if not user in mpaDBDict['EQTest']:
-                                #if isinstance(EQTest[index], PlaceHolder):
                                 if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                                     mpaDBDict['EQTest'].pop(index)
                                     mpaDBDict['EQTest'].insert(index, classRole + '|' + user)
@@ -489,34 +409,6 @@ async def removeme(ctx):
         elif mpaDBDict is IndexError:
             await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
         return
-    # try:
-    #     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-    #     defaultConfigQuery = tonkDB.configDefaultQueryDB()
-    #     for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
-    #         listMessageID = int(key)
-    #         break
-    #     # Load the existing MPA Data from the DB
-    #     mpaChannelList = dbQuery['Items'][0]['mpaChannels']
-    #     activeMPAList = dbQuery['Items'][0]['activeMPAs']
-    #     mpaDBDict['participantCount'] = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
-    #     EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-    #   #  EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
-    #     SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
-    #     listMessage = await ctx.fetch_message(listMessageID)
-    #     maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-    #     privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     classIcons = parseDB.getClassIcons(defaultConfigQuery)
-    #     # Load configuration flags for the MPA
-    #     mpaExpirationEnabled = parseDB.getMpaExpirationEnabled(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     mpaExpirationTime = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
-    # except KeyError as e:
-    #     print (e)
-    #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-    #     return
-    # except IndexError as e:
-    #     print (e)
-    #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-    #     return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
             if mpaDBDict['mpaExpirationEnabled']:
@@ -525,16 +417,13 @@ async def removeme(ctx):
                 expirationDate = ''
             await ctx.message.delete()
             for index, item in enumerate(mpaDBDict['EQTest']):
-                #if (type(mpaDBDict['EQTest'][index]) is PlaceHolder):
                 if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                     pass
                 # If the user is found in the MPA list, remove that item from the list and then push the change to the DB.
                 elif ctx.author.name in item:
                     mpaDBDict['EQTest'].pop(index)
-                    #mpaDBDict['EQTest'].insert(index, PlaceHolder(''))
                     mpaDBDict['EQTest'].insert(index, f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}")
                     mpaDBDict['participantCount'] -= 1
-                   # playerRemoved[ctx.channel.id] = True
                     await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {ctx.author.name} from the MPA list```')
                     if len(mpaDBDict['SubDict']) > 0:
                         classRole = classIcons['noclass']
@@ -570,35 +459,6 @@ async def removeUser(ctx, user):
         elif mpaDBDict is IndexError:
             await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
         return
-   # global BlankMpaClass
-    # try:
-    #     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-    #     defaultConfigQuery = tonkDB.configDefaultQueryDB()
-    #     for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
-    #         listMessageID = int(key)
-    #         break
-    #     # Load the existing MPA Data from the DB
-    #     mpaChannelList = dbQuery['Items'][0]['mpaChannels']
-    #     activeMPAList = dbQuery['Items'][0]['activeMPAs']
-    #     mpaDBDict['participantCount'] = int(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount'])
-    #     EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-    #   #  EQTest = await convertEQListFromDB(ctx, listMessageID, EQTest)
-    #     SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
-    #     listMessage = await ctx.fetch_message(listMessageID)
-    #     maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-    #     privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     classIcons = parseDB.getClassIcons(defaultConfigQuery)
-    #     # Load configuration flags for the MPA
-    #     mpaExpirationEnabled = parseDB.getMpaExpirationEnabled(ctx.channel.id, dbQuery, defaultConfigQuery)
-    #     mpaExpirationTime = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
-    # except KeyError as e:
-    #     print (e)
-    #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-    #     return
-    # except IndexError as e:
-    #     print (e)
-    #     await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-    #     return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['mpaExpirationEnabled']:
             expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
@@ -608,7 +468,6 @@ async def removeUser(ctx, user):
             if len(mpaDBDict['EQTest']):
                     for index in range(len(mpaDBDict['EQTest'])):
                         appended = False
-                        #if (type(mpaDBDict['EQTest'][index]) is PlaceHolder):
                         if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
                             pass
                         elif user.lower() in mpaDBDict['EQTest'][index].lower():
@@ -616,11 +475,9 @@ async def removeUser(ctx, user):
                             toBeRemoved = mpaDBDict['EQTest'][index]
                             mpaDBDict['EQTest'][index] = user
                             mpaDBDict['EQTest'].remove(user)
-                           # mpaDBDict['EQTest'].insert(index, PlaceHolder(''))
                             mpaDBDict['EQTest'].insert(index, f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}")
                             user = user
                             mpaDBDict['participantCount'] -= 1
-                            #playerRemoved[ctx.channel.id] = True
                             toBeRemovedName = toBeRemoved.split('|')
                             toBeRemovedName2 = toBeRemovedName[1]
                             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {toBeRemovedName2} from the MPA list```')
@@ -643,7 +500,6 @@ async def removeUser(ctx, user):
                                 mpaDBDict['SubDict'][index] = user
                                 mpaDBDict['SubDict'].remove(user)
                                 user = user
-                                #   playerRemoved[ctx.channel.id] = True
                                 await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {toBeRemoved} from the Reserve list```')
                                 appended = True
                                 # Write was made, updating DB
@@ -655,8 +511,6 @@ async def removeUser(ctx, user):
                 await ctx.send("There are no players in the MPA.")
         else:
             await ctx.send('There is no MPA.')
-        # if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-        #     expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
         await ctx.message.delete()
     else:
         await ctx.send('This command can only be used in a MPA Channel!')
@@ -719,9 +573,7 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
     embedColor = embedColorHex.lstrip('#')
     embedColor = discord.Colour(value=int(embedColor, 16))
     ## End Configuration queries
-   # EQList = await convertEQListFromDB(ctx, listMessageID, EQList)
     for word in EQList:
-        #if (type(word) is PlaceHolder):
         if (word == f"PlaceHolder{ctx.channel.id}{listMessageID}"):
             playerlist += (f'{inactiveServerIcon}\n')
             classlist += (f"{classIcons['noclass']}\n")
@@ -764,7 +616,6 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
     except (KeyError, discord.NotFound):
         print(ctx.author.name + ' Started an MPA on ' + ctx.guild.name)
         mpaMessage = await ctx.fetch_message(listMessageID)
-        #await mpaMessage.send(embed=em)
         traceback.print_exc(file=sys.stdout)
         #MPACount += 1
        # await client.get_channel(OtherIDDict['ControlPanel']).send('```css\n' + ctx.author.name + '#' + str(ctx.author.discriminator) + ' (ID: ' + str(ctx.author.id) + ') ' + 'Started an MPA on ' + ctx.guild.name + '\nAmount of Active MPAs: ' + str(MPACount) + '\nTimestamp: ' + str(datetime.now()) + '```')
