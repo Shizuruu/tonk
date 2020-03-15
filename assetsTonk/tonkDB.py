@@ -34,7 +34,7 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
             'guildID': f"{guildID}",
             'mpaChannels': [f"{newChannelID}"],
             'lastUpdated': f"{timeStamp}",
-            'mpaServerConfig':{"global": {}},
+            'mpaServerConfig':{},
             'mpaConfig': {f"{newChannelID}": {}},
             'activeMPAs': {f"{newChannelID}": {}}
         }

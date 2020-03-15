@@ -61,7 +61,7 @@ def getMpaManagerRoles(channelID: str, dbQuery):
     try:
         mpaManagerDict = {}
         mpaManagerDict['channelManagerRoles'] = dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['mpaManagerRoles']
-        mpaManagerDict['serverManagerRoles'] = dbQuery['Items'][0]['mpaServerConfig']['global']['mpaManagerRoles']
+        mpaManagerDict['serverManagerRoles'] = dbQuery['Items'][0]['mpaServerConfig']['mpaManagerRoles']
         return mpaManagerDict
     except KeyError:
         mpaManagerDict = {}
