@@ -519,81 +519,54 @@ async def cmd_setmpablock(ctx, blockNumber):
                 await ctx.send('An error occurred attempting to set this config flag. Please check the console for more details.')
             return
 
-        # try: 
-        #     if mpaBlockNumber == mpaBlockConfigDict[str(ctx.guild.id)]:
-        #         await ctx.send(f'This server is already set for block {mpaBlockNumber}!')
-        #         return
-        #     elif blockNumber.lower() == 'clear' and mpaBlockNumber == 99999999999999999999999999999999:
-        #         del mpaBlockConfigDict[str(ctx.guild.id)]
-        #         await ctx.send('Successfully removed the block from the MPA configuration.')
-        #     else:
-        #         mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
-        # except KeyError:
-        #     print (f'{ctx.guild.id} is not in the dictionary. Adding that in..')
-        #     if blockNumber.lower() == 'clear':
-        #         await ctx.send("You can't just clear nothing, are you drunk?")
-        #         return
-        #     else:
-        #         mpaBlockConfigDict[str(ctx.guild.id)] = mpaBlockNumber
-        # try:
-        #     dumpMpaBlockConfig(mpaBlockConfigDict)
-        #     if blockNumber.lower() != 'clear':
-        #         print (f"{ctx.author.name} has set {ctx.guild.name}'s block number to {mpaBlockNumber}.")
-        #         await ctx.send(f'Set the server block to {mpaBlockNumber}')
-        #     return
-        # except Exception as e:
-        #     print (e)
-        #     await ctx.send('Something went wrong! AAAAA')
-        #     return
 
+# Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
+@client.command(name='enablempaexpiration')
+async def cmd_enablempaexpiration(ctx):
+    if ctx.author.top_role.permissions.administrator:
+        try:
+            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+                await ctx.send('This channel already has auto expiration enabled!')
+                return
+            else:
+                mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
+        except KeyError:
+            print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
+            mpaExpirationConfig[str(ctx.guild.id)] = []
+            mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
+        try:
+            dumpMpaAutoExpiration(mpaExpirationConfig)
+            print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
+            await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
+        except Exception as e:
+            await ctx.send('Error enabling the channel.')
+            print (e)
+        return
 
-# # Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
-# @client.command(name='enablempaexpiration')
-# async def cmd_enablempaexpiration(ctx):
-#     if ctx.author.top_role.permissions.administrator:
-#         try:
-#             if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-#                 await ctx.send('This channel already has auto expiration enabled!')
-#                 return
-#             else:
-#                 mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
-#         except KeyError:
-#             print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-#             mpaExpirationConfig[str(ctx.guild.id)] = []
-#             mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
-#         try:
-#             dumpMpaAutoExpiration(mpaExpirationConfig)
-#             print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
-#             await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
-#         except Exception as e:
-#             await ctx.send('Error enabling the channel.')
-#             print (e)
-#         return
-
-# # Disables automatic MPA deletion in the channel this comamnd was called in.
-# # Note that this automatically runs if the disablempachannel was called.
-# @client.command(name='disablempaexpiration')
-# async def cmd_disablempaexpiration(ctx):
-#     if ctx.author.top_role.permissions.administrator:
-#         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-#             try:
-#                 for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
-#                     if ctx.channel.id == item:
-#                         mpaExpirationConfig[str(ctx.guild.id)].pop(index)
-#                         try:
-#                             dumpMpaAutoExpiration(mpaExpirationConfig)
-#                             channel = client.get_channel(item)
-#                             await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
-#                             return
-#                         except Exception as e:
-#                             await ctx.send('Error removing the channel from the list.')
-#                             print (e)
-#             except Exception as e:
-#                 await ctx.send('Error removing the channel.')
-#                 print (e)
-#         else:
-#             await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
-#             return
+# Disables automatic MPA deletion in the channel this comamnd was called in.
+# Note that this automatically runs if the disablempachannel was called.
+@client.command(name='disablempaexpiration')
+async def cmd_disablempaexpiration(ctx):
+    if ctx.author.top_role.permissions.administrator:
+        if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+            try:
+                for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
+                    if ctx.channel.id == item:
+                        mpaExpirationConfig[str(ctx.guild.id)].pop(index)
+                        try:
+                            dumpMpaAutoExpiration(mpaExpirationConfig)
+                            channel = client.get_channel(item)
+                            await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
+                            return
+                        except Exception as e:
+                            await ctx.send('Error removing the channel from the list.')
+                            print (e)
+            except Exception as e:
+                await ctx.send('Error removing the channel.')
+                print (e)
+        else:
+            await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
+            return
 
 # Debugging command
 # @client.command(name='eval')
@@ -618,39 +591,43 @@ async def cmd_setmpablock(ctx, blockNumber):
 # Opens the MPA to non-approved roles. Only usable in certain servers.
 @client.command(name='openmpa')
 async def cmd_openmpa(ctx):
-    if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-        if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
-            if guestEnabled[ctx.channel.id] == True:
-                await ctx.send('This MPA is already open!')
-            else:
-                guestEnabled[ctx.channel.id] = True
-                for index in range(len(ctx.guild.roles)):
-                    if ctx.guild.id == serverIDDict['Okra']:
-                        if (ctx.guild.roles[index].id == 224757670823985152):
-                            await ctx.send(f'{ctx.guild.roles[index].mention} can now join in the MPA!')
-                            await generateList(ctx, '```fix\nMPA is now open to non-members.```')
-                    elif ctx.guild.id == serverIDDict['Ishana']:
-                        if (ctx.guild.roles[index].id == 561910935107665949):
-                            print ('Reached here')
-                            await ctx.send(f'{ctx.guild.roles[index].mention} can now join in the MPA!')
-                            await generateList(ctx, '```fix\nMPA is now open to non-members.```')
-                    else:
-                        await ctx.send('Opened MPA to non-members!')
-                        await generateList(ctx, '```fix\nMPA is now open to non-members.```')
-                        break
+    await mpaControl.openmpa(ctx)
+    return
+    # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
+    #         if guestEnabled[ctx.channel.id] == True:
+    #             await ctx.send('This MPA is already open!')
+    #         else:
+    #             guestEnabled[ctx.channel.id] = True
+    #             for index in range(len(ctx.guild.roles)):
+    #                 if ctx.guild.id == serverIDDict['Okra']:
+    #                     if (ctx.guild.roles[index].id == 224757670823985152):
+    #                         await ctx.send(f'{ctx.guild.roles[index].mention} can now join in the MPA!')
+    #                         await generateList(ctx, '```fix\nMPA is now open to non-members.```')
+    #                 elif ctx.guild.id == serverIDDict['Ishana']:
+    #                     if (ctx.guild.roles[index].id == 561910935107665949):
+    #                         print ('Reached here')
+    #                         await ctx.send(f'{ctx.guild.roles[index].mention} can now join in the MPA!')
+    #                         await generateList(ctx, '```fix\nMPA is now open to non-members.```')
+    #                 else:
+    #                     await ctx.send('Opened MPA to non-members!')
+    #                     await generateList(ctx, '```fix\nMPA is now open to non-members.```')
+    #                     break
 # Closes the MPA to only approved roles. Only usable in certain servers.
 @client.command(name='closempa')
 async def cmd_closempa(ctx):
-    if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-        if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
-            if guestEnabled[ctx.channel.id] == False:
-                await ctx.send('This MPA is already closed!')
-            else:
-                guestEnabled[ctx.channel.id] = False
-                await ctx.send('Closed MPA to Members only.')
-                await generateList(ctx, '```fix\nMPA is now closed to non-members```')
-        else:
-            await ctx.send('You do not have the permission to do this.')
+    await mpaControl.closempa(ctx)
+    return
+    # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
+    #         if guestEnabled[ctx.channel.id] == False:
+    #             await ctx.send('This MPA is already closed!')
+    #         else:
+    #             guestEnabled[ctx.channel.id] = False
+    #             await ctx.send('Closed MPA to Members only.')
+    #             await generateList(ctx, '```fix\nMPA is now closed to non-members```')
+    #     else:
+    #         await ctx.send('You do not have the permission to do this.')
 
 # Schedules an MPA for to be made at a later time. This converts a time in hours/minutes/seconds and converts it into seconds, which will then put it in a dictionary
 # and a function that runs every second will check to see if it's time to start an MPA with the arguements provided in this command.
