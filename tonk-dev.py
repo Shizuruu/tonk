@@ -908,97 +908,104 @@ async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
 # Removes the caller from the MPA.
 @client.command(name='removeme')
 async def cmd_removeme(ctx):
-    global BlankMpaClass
-    inMPA = False
-    if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-        if ctx.channel.id in EQTest:
-            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-                expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
-            await ctx.message.delete()
-            for index, item in enumerate(EQTest[ctx.channel.id]):
-                if (type(EQTest[ctx.channel.id][index]) is PlaceHolder):
-                    pass
-                elif ctx.author.name in item:
-                    EQTest[ctx.channel.id].pop(index)
-                    EQTest[ctx.channel.id].insert(index, PlaceHolder(''))
-                    participantCount[ctx.channel.id] -= 1
-                   # playerRemoved[ctx.channel.id] = True
-                    await generateList(ctx, f'```diff\n- Removed {ctx.author.name} from the MPA list```')
-                    if len(SubDict[ctx.channel.id]) > 0:
-                        classRole = classes[BlankMpaClass]
-                        EQTest[ctx.channel.id][index] = classRole + '|' + SubDict[ctx.channel.id].pop(0)
-                        participantCount[ctx.channel.id] += 1
-                        await generateList(ctx, f'```diff\n- Removed {ctx.author.name} from the MPA list and added {EQTest[ctx.channel.id][index]}```')
-                    inMPA = True
-                    return
-            if inMPA == False:
-                for index, item in enumerate(SubDict[ctx.channel.id]):
-                    if ctx.author.name in item:
-                        SubDict[ctx.channel.id].pop(index)
-                        await generateList(ctx, f'```diff\n- Removed {ctx.author.name} from the Reserve list```')
-                        return
-                    else:
-                        await generateList(ctx, '```fix\nYou were not in the MPA list in the first place.```')
-                if len(SubDict[ctx.channel.id]) == 0:
-                    await generateList(ctx, '```fix\nYou were not in the MPA list in the first place.```')
+    await mpaControl.removeme(ctx)
+    return
+    # global BlankMpaClass
+    # inMPA = False
+    # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #     if ctx.channel.id in EQTest:
+    #         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+    #             expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
+    #         await ctx.message.delete()
+    #         for index, item in enumerate(EQTest[ctx.channel.id]):
+    #             if (type(EQTest[ctx.channel.id][index]) is PlaceHolder):
+    #                 pass
+    #             elif ctx.author.name in item:
+    #                 EQTest[ctx.channel.id].pop(index)
+    #                 EQTest[ctx.channel.id].insert(index, PlaceHolder(''))
+    #                 participantCount[ctx.channel.id] -= 1
+    #                # playerRemoved[ctx.channel.id] = True
+    #                 await generateList(ctx, f'```diff\n- Removed {ctx.author.name} from the MPA list```')
+    #                 if len(SubDict[ctx.channel.id]) > 0:
+    #                     classRole = classes[BlankMpaClass]
+    #                     EQTest[ctx.channel.id][index] = classRole + '|' + SubDict[ctx.channel.id].pop(0)
+    #                     participantCount[ctx.channel.id] += 1
+    #                     await generateList(ctx, f'```diff\n- Removed {ctx.author.name} from the MPA list and added {EQTest[ctx.channel.id][index]}```')
+    #                 inMPA = True
+    #                 return
+    #         if inMPA == False:
+    #             for index, item in enumerate(SubDict[ctx.channel.id]):
+    #                 if ctx.author.name in item:
+    #                     SubDict[ctx.channel.id].pop(index)
+    #                     await generateList(ctx, f'```diff\n- Removed {ctx.author.name} from the Reserve list```')
+    #                     return
+    #                 else:
+    #                     await generateList(ctx, '```fix\nYou were not in the MPA list in the first place.```')
+    #             if len(SubDict[ctx.channel.id]) == 0:
+    #                 await generateList(ctx, '```fix\nYou were not in the MPA list in the first place.```')
 
 # Manager command to remove a user from the MPA.
 @client.command(name='remove')
 async def cmd_remove(ctx, user):
-    global BlankMpaClass
-    if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.guild.id == serverIDDict['RappyCasino'] or ctx.author.top_role.permissions.administrator:
-        if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-            if ctx.channel.id in EQTest:
-                if len(EQTest[ctx.channel.id]):
-                        for index in range(len(EQTest[ctx.channel.id])):
-                            appended = False
-                            if (type(EQTest[ctx.channel.id][index]) is PlaceHolder):
-                                pass
-                            elif user.lower() in EQTest[ctx.channel.id][index].lower():
-                                toBeRemoved = EQTest[ctx.channel.id][index]
-                                EQTest[ctx.channel.id][index] = user
-                                EQTest[ctx.channel.id].remove(user)
-                                EQTest[ctx.channel.id].insert(index, PlaceHolder(''))
-                                user = user
-                                participantCount[ctx.channel.id] -= 1
-                                #playerRemoved[ctx.channel.id] = True
-                                toBeRemovedName = toBeRemoved.split('|')
-                                toBeRemovedName2 = toBeRemovedName[1]
-                                await generateList(ctx, f'```diff\n- Removed {toBeRemovedName2} from the MPA list```')
-                                if len(SubDict[ctx.channel.id]) > 0:
-                                    classRole = classes[BlankMpaClass]
-                                    EQTest[ctx.channel.id][index] = classRole + '|' + SubDict[ctx.channel.id].pop(0)
-                                    tobenamed = EQTest[ctx.channel.id][index].split()
-                                    toBeNamed2 = tobenamed[1]
-                                    participantCount[ctx.channel.id] += 1
-                                    await generateList(ctx, f'```diff\n- Removed {toBeRemoved} from the MPA list and added {toBeNamed2}```')
-                                appended = True
-                                break
-                        if not appended:
-                            for index in range(len(SubDict[ctx.channel.id])):
-                                appended = False
-                                if user in SubDict[ctx.channel.id][index]:
-                                    toBeRemoved = SubDict[ctx.channel.id][index]
-                                    SubDict[ctx.channel.id][index] = user
-                                    SubDict[ctx.channel.id].remove(user)
-                                    user = user
-                                 #   playerRemoved[ctx.channel.id] = True
-                                    await generateList(ctx, f'```diff\n- Removed {toBeRemoved} from the Reserve list```')
-                                    appended = True
-                                    break
-                        if not appended:    
-                            await generateList(ctx, f"```fix\nPlayer {user} does not exist in the MPA list```")
-                else:
-                    await ctx.send("There are no players in the MPA.")
-            else:
-                await ctx.send('There is no MPA.')
-            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-                expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
-            await ctx.message.delete()
-        else:
-            await ctx.send('This command can only be used in a MPA Channel!')
+    if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator:
+        await mpaControl.removeUser(ctx, user)
+        return
     else:
-        await generateList(ctx, "You don't have permissions to use this command")
+        await ctx.send('You do not have permissions to use this command.')
+    # global BlankMpaClass
+    # if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.guild.id == serverIDDict['RappyCasino'] or ctx.author.top_role.permissions.administrator:
+    #     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #         if ctx.channel.id in EQTest:
+    #             if len(EQTest[ctx.channel.id]):
+    #                     for index in range(len(EQTest[ctx.channel.id])):
+    #                         appended = False
+    #                         if (type(EQTest[ctx.channel.id][index]) is PlaceHolder):
+    #                             pass
+    #                         elif user.lower() in EQTest[ctx.channel.id][index].lower():
+    #                             toBeRemoved = EQTest[ctx.channel.id][index]
+    #                             EQTest[ctx.channel.id][index] = user
+    #                             EQTest[ctx.channel.id].remove(user)
+    #                             EQTest[ctx.channel.id].insert(index, PlaceHolder(''))
+    #                             user = user
+    #                             participantCount[ctx.channel.id] -= 1
+    #                             #playerRemoved[ctx.channel.id] = True
+    #                             toBeRemovedName = toBeRemoved.split('|')
+    #                             toBeRemovedName2 = toBeRemovedName[1]
+    #                             await generateList(ctx, f'```diff\n- Removed {toBeRemovedName2} from the MPA list```')
+    #                             if len(SubDict[ctx.channel.id]) > 0:
+    #                                 classRole = classes[BlankMpaClass]
+    #                                 EQTest[ctx.channel.id][index] = classRole + '|' + SubDict[ctx.channel.id].pop(0)
+    #                                 tobenamed = EQTest[ctx.channel.id][index].split()
+    #                                 toBeNamed2 = tobenamed[1]
+    #                                 participantCount[ctx.channel.id] += 1
+    #                                 await generateList(ctx, f'```diff\n- Removed {toBeRemoved} from the MPA list and added {toBeNamed2}```')
+    #                             appended = True
+    #                             break
+    #                     if not appended:
+    #                         for index in range(len(SubDict[ctx.channel.id])):
+    #                             appended = False
+    #                             if user in SubDict[ctx.channel.id][index]:
+    #                                 toBeRemoved = SubDict[ctx.channel.id][index]
+    #                                 SubDict[ctx.channel.id][index] = user
+    #                                 SubDict[ctx.channel.id].remove(user)
+    #                                 user = user
+    #                              #   playerRemoved[ctx.channel.id] = True
+    #                                 await generateList(ctx, f'```diff\n- Removed {toBeRemoved} from the Reserve list```')
+    #                                 appended = True
+    #                                 break
+    #                     if not appended:    
+    #                         await generateList(ctx, f"```fix\nPlayer {user} does not exist in the MPA list```")
+    #             else:
+    #                 await ctx.send("There are no players in the MPA.")
+    #         else:
+    #             await ctx.send('There is no MPA.')
+    #         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+    #             expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
+    #         await ctx.message.delete()
+    #     else:
+    #         await ctx.send('This command can only be used in a MPA Channel!')
+    # else:
+    #     await generateList(ctx, "You don't have permissions to use this command")
 
 # Changes the class of the caller to another one they specify. Or none if they call for none of the classes.
 @client.command(name='changeclass')
