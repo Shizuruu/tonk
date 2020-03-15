@@ -56,6 +56,25 @@ def findRoleID(roleName, message):
         return 0
 
 
+async def isManager(ctx):
+    dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
+    mpaManagerRoles = parseDB.getMpaManagerRoles(ctx.channel.id, dbQuery)
+    # Case: Channel manager roles is configured
+    if type(mpaManagerRoles['channelManagerRoles']) is not None:
+        # Return true if the user's role is in either channel OR server manager roles, else return false
+        if ctx.author.roles.id in mpaManagerRoles['channelManagerRoles']:
+            return True
+        elif type(mpaManagerRoles['serverManagerRoles']) is not None:
+            if ctx.author.roles.id in mpaManagerRoles['serverManagerRoles']:
+                return True
+        # These if statements should be ending the function on the return statement, if none of those conditions are met we return false.
+        return False
+    # Case: Channel manager roles is NOT configured, but server manager roles are
+    elif type(mpaManagerRoles['serverManagerRoles']) is not None:
+        if ctx.author.roles.id in mpaManagerRoles['serverManagerRoles']:
+            return True
+    return False
+
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
 async def expiration_checker():
     global mpaWarningCounter
@@ -273,19 +292,23 @@ async def cmd_ffs(ctx):
 # Calls function_startmpa to actually do the legwork
 @client.command(name='startmpa')
 async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
-    # This checks if Tonk has the deleting permission. If it doesn't, don't run the script at all and just stop.
-    try:
-        await ctx.message.delete()
-    except discord.Forbidden:
-        print (ctx.author.name + f' Tried to start an MPA at {ctx.message.guild.name}, but failed.')
-        await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
-        return
-    await mpaControl.startmpa(ctx, message, mpaType)
-
+    isManager = mpaControl.isManager(ctx)
+    if isManager or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
+        # This checks if Tonk has the deleting permission. If it doesn't, don't run the script at all and just stop.
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            print (ctx.author.name + f' Tried to start an MPA at {ctx.message.guild.name}, but failed.')
+            await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
+            return
+        await mpaControl.startmpa(ctx, message, mpaType)
+    else:
+        await ctx.send('You do not have permissions to use this command.')
 # Closes out the MPA and flushes related data so another MPA can be opened in the same channel at a later date.
 @client.command(name='removempa')
 async def cmd_removempa(ctx):
-    if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
+    isManager = mpaControl.isManager(ctx)
+    if isManager or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
         await mpaControl.removempa(ctx)
     else:
         await ctx.send('You do not have permissions to remove the mpa.')
@@ -299,8 +322,12 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
 # Manager command that adds a custom name to the MPA.
 @client.command(name='add', aliases=['reserve'])
 async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
-    await mpaControl.addUser(ctx, user, mpaArg)
-    return
+    isManager = mpaControl.isManager(ctx)
+    if isManager or ctx.author.top_role.permissions.administrator:
+        await mpaControl.addUser(ctx, user, mpaArg)
+        return
+    else:
+        await ctx.send('You do not have permissions to use this command.')
 
 # Removes the caller from the MPA.
 @client.command(name='removeme')
@@ -311,7 +338,8 @@ async def cmd_removeme(ctx):
 # Manager command to remove a user from the MPA.
 @client.command(name='remove')
 async def cmd_remove(ctx, user):
-    if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator:
+    isManager = mpaControl.isManager(ctx)
+    if isManager or ctx.author.top_role.permissions.administrator:
         await mpaControl.removeUser(ctx, user)
         return
     else:

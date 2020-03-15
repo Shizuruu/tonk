@@ -56,3 +56,16 @@ def getAllowedMpaRoles(channelID: str, dbQuery, defaultDBQuery):
         return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['mpaAllowedRoles']
     except KeyError:
         return defaultDBQuery['Items'][0]['mpaConfig']['mpaBlock']
+
+def getMpaManagerRoles(channelID: str, dbQuery):
+    try:
+        mpaManagerDict = {}
+        mpaManagerDict['channelManagerRoles'] = dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['mpaManagerRoles']
+        mpaManagerDict['serverManagerRoles'] = dbQuery['Items'][0]['mpaServerConfig']['global']['mpaManagerRoles']
+        return mpaManagerDict
+    except KeyError:
+        mpaManagerDict = {}
+        # Return none type, the key isnt there meaning the server did not configure any roles.
+        mpaManagerDict['channelManagerRoles'] = None
+        mpaManagerDict['serverManagerRoles'] = None
+        return mpaManagerDict
