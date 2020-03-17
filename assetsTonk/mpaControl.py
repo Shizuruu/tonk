@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import discord
-import json
 import time
 import traceback
 import sys
@@ -13,6 +12,7 @@ from assetsTonk import tonkDB
 from assetsTonk import parseDB
 from assetsTonk import MpaMatchDev
 from assetsTonk import classMatchDev as classMatch
+from assetsTonk import sendErrorMessage
 
 def is_pinned(m):
    return m.pinned != True
@@ -75,11 +75,11 @@ async def startmpa(ctx, broadcast, mpaType):
         mpaExpirationTime = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
     except KeyError as e:
         print (e)
-        await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
         return
     except IndexError as e:
         print (e)
-        await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
         return
     if (str(ctx.channel.id)) in (mpaChannelList):
         mpaMap = MpaMatchDev.get_class(mpaType)
@@ -138,7 +138,7 @@ async def startmpa(ctx, broadcast, mpaType):
             privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
             await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```fix\nThere is already an MPA being made here!```')
     else:
-        await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
 
 
 #This function actually performs the removempa command. This is a separate function so that the bot can remove mpas as well.
@@ -150,10 +150,10 @@ async def removempa(ctx):
         mpaMessageID = next(iter(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']))
         startTime = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][mpaMessageID]
     except KeyError as e:
-        await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, removempa.__name__)
         return
     except IndexError as e:
-        await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, removempa.__name__)
         return
     if str(ctx.channel.id) in activeMpaChannels.keys():
         try:
@@ -180,9 +180,9 @@ async def addme(ctx, mpaArg: str = 'none'):
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, addme.__name__)
         elif mpaDBDict is IndexError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, addme.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         for index in range(len(ctx.author.roles)):
@@ -310,9 +310,9 @@ async def addUser(ctx, user, mpaArg):
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, addUser.__name__)
         elif mpaDBDict is IndexError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, addUser.__name__)
         return
     classRole = ''
     if str(ctx.channel.id) in mpaDBDict['mpaChannelList']:
@@ -397,9 +397,9 @@ async def removeme(ctx):
         classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, removeme.__name__)
         elif mpaDBDict is IndexError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, removeme.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
@@ -448,9 +448,9 @@ async def removeUser(ctx, user):
         classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, removeUser.__name__)
         elif mpaDBDict is IndexError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, removeUser.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['mpaExpirationEnabled']:
@@ -515,9 +515,9 @@ async def openmpa(ctx):
         classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, openmpa.__name__)
         elif mpaDBDict is IndexError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, openmpa.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['guestEnabled'] == True:
@@ -526,6 +526,10 @@ async def openmpa(ctx):
         else:
             mpaDBDict['guestEnabled'] = True
             await ctx.send('Opened MPA to non-members!')
+            if mpaDBDict['mpaExpirationEnabled']:
+                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
+            else:
+                expirationDate = ''
             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nMPA is now open to non-members.```')
             await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
             return
@@ -537,9 +541,9 @@ async def closempa(ctx):
         classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, closempa.__name__)
         elif mpaDBDict is IndexError:
-            await ctx.channel.send('This channel is not an MPA Channel. You can enable the MPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, closempa.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['guestEnabled'] == False:
@@ -548,9 +552,83 @@ async def closempa(ctx):
         else:
             mpaDBDict['guestEnabled'] = False
             await ctx.send('Closed MPA to Members only.')
+            if mpaDBDict['mpaExpirationEnabled']:
+                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
+            else:
+                expirationDate = ''
             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nMPA is now closed to non-members```')
             await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
             return
+
+# Changes the class of the caller to another one they specify. Or none if they call for none of the classes.
+async def changeClass(ctx, mpaArg):
+    inMPA = False
+    mpaDBDict = await loadMpaVariables(ctx)
+    if type(mpaDBDict) is dict:
+        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
+        heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
+        subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defaultConfigQuery'])
+    else:
+        if mpaDBDict is KeyError:
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, changeClass.__name__)
+        elif mpaDBDict is IndexError:
+            await sendErrorMessage.mpaChannelNotEnabled(ctx, changeClass.__name__)
+        return
+    if str(ctx.channel.id) in mpaDBDict['mpaChannelList']:
+        if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
+            if mpaDBDict['mpaExpirationEnabled']:
+                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
+            else:
+                expirationDate = ''
+            await ctx.message.delete()
+            if len(mpaArg) > 2:
+                if len(mpaArg) == 4 and mpaArg != 'none':
+                    classSplit = re.findall('..', mpaArg)
+                    #for item in classSplit:
+                     #   print(item)
+                    mpaClass1 = classMatch.findClass(classSplit[0])
+                    mpaClass2 = classMatch.findClass(classSplit[1])
+                    newRoleName = mpaClass1.capitalize()
+                    if mpaClass1 == mpaClass2:
+                        mpaClass2 = classMatch.findClass('NoClass')
+                    if classSplit[0] not in heroClasses and classSplit[1] in subbableHeroClasses or str(mpaClass2) == str(classMatch.findClass('NoClass')):
+                        newRole = classIcons[mpaClass1] + classIcons[mpaClass2]
+                    elif classSplit[0] in heroClasses or classSplit[1] in heroClasses or str(mpaClass2) == str(classMatch.findClass('NoClass')):
+                        newRole = classIcons[mpaClass1]
+                    else:
+                        newRole = classIcons[mpaClass1] + classIcons[mpaClass2]
+                        newRoleName += f'/{mpaClass2.capitalize()}'
+
+                elif len(mpaArg) > 1:
+                    classSplit = re.findall('..', mpaArg)
+                  #  for item in classSplit:
+                   #     print(item)
+                    mpaClass1 = classMatch.findClass(classSplit[0])
+                    newRole = classIcons[mpaClass1]
+                    newRoleName = classMatch.findClassName(mpaClass1)
+                    print(newRole)
+            else:
+                mpaClass = classMatch.findClass(mpaArg)
+                newRole = classIcons[mpaClass]
+                newRoleName = classMatch.findClassName(mpaClass)
+            for index, item in enumerate(mpaDBDict['EQTest']):
+                if (mpaDBDict['EQTest'][index]) == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}":
+                    pass
+                elif ctx.author.name in item:
+                    mpaDBDict['EQTest'].pop(index)
+                    mpaDBDict['EQTest'].insert(index, newRole + '|' + ctx.author.name)
+                    await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n+ Changed {ctx.author.name}\'s class to ' + newRoleName + '```')
+                    inMPA = True
+                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                    return
+            if inMPA == False:
+                await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nYou are not in the MPA!```')
+        else:
+            await ctx.send('There is no MPA.')
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, changeClass.__name__)
+
+
 
 # Arguements to be taken in DB revision: message, dbQuery, EQList, SubDict, maxParticipants, inputstring)
 # message: The message object to modify when updating the EQ List display on the channel

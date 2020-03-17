@@ -71,12 +71,15 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
 #     return
 
 
-def removeMpaChannel(guildID, channelIndex, timeStamp):
+def removeMpaChannel(guildID, channelID, channelIndex, timeStamp):
     dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
         },
-        UpdateExpression=f"REMOVE mpaChannels[{channelIndex}] SET lastUpdated = :timestamp",
+        UpdateExpression=f"REMOVE mpaChannels[{channelIndex}], mpaConfig.#channelID, activeMPAs.#channelID SET lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}"
+        },
         ExpressionAttributeValues={
             ':timestamp': f"{timeStamp}"
         }

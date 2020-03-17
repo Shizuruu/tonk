@@ -21,6 +21,9 @@ from assetsTonk import tonkDB
 from assetsTonk import utils
 from assetsTonk import mpaControl
 from assetsTonk import parseDB
+from assetsTonk import sendErrorMessage
+from assetsTonk import mpaChannel
+
 
 # These are all the constants that will be used throughout the bot. Most if not all of these are dictionaries that allow for different settings per server/channel to be used.
 print ('Beginning bot startup process...\n')
@@ -59,24 +62,31 @@ def findRoleID(roleName, message):
 async def isManager(ctx):
     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
     mpaManagerRoles = parseDB.getMpaManagerRoles(ctx.channel.id, dbQuery)
-    if mpaManagerRoles is IndexError:
-        await ctx.send('This channel is not an MPA Channel. You can enable the AAAMPA features for this channel with `!enablempachannel`. Type `!help` for more information.')
-        return None
-    # Case: Channel manager roles is configured
-    if mpaManagerRoles['channelManagerRoles'] is not None:
-        # Return true if the user's role is in either channel OR server manager roles, else return false
-        if ctx.author.top_role.id in mpaManagerRoles['channelManagerRoles']:
-            return True
-        elif (mpaManagerRoles['serverManagerRoles']) is not None:
-            if ctx.author.top_role.id in mpaManagerRoles['serverManagerRoles']:
+    mpaChannelList = dbQuery['Items'][0]['mpaChannels']
+    authorRoleID = str(ctx.author.top_role.id)
+    if type(mpaManagerRoles) is dict:
+        if mpaManagerRoles['channelManagerRoles'] is not None:
+            # Return true if the user's role is in either channel OR server manager roles, else return false
+            if authorRoleID in mpaManagerRoles['channelManagerRoles']:
                 return True
-        # These if statements should be ending the function on the return statement, if none of those conditions are met we return false.
-        return False
-    # Case: Channel manager roles is NOT configured, but server manager roles are
-    elif mpaManagerRoles['serverManagerRoles'] is not None:
-        if ctx.author.top_role.id in mpaManagerRoles['serverManagerRoles']:
-            return True
-    return False
+            # User is not in channelManagerRoles and serverManagerRoles is not blank
+            elif (mpaManagerRoles['serverManagerRoles']) is not None:
+                if authorRoleID in mpaManagerRoles['serverManagerRoles']:
+                    return True
+            # These if statements should be ending the function on the return statement, if none of those conditions are met we return false.
+            return False
+        # Case: Channel manager roles is NOT configured, but server manager roles are
+        elif mpaManagerRoles['serverManagerRoles'] is not None:
+            if authorRoleID in mpaManagerRoles['serverManagerRoles']:
+                return True
+            else:
+                return False
+        # Other cases which is most likely both dictionaries are not configured at all.
+        elif (str(ctx.channel.id)) in (mpaChannelList):
+            return False
+        else:
+            return None
+    return None
 
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
 async def expiration_checker():
@@ -296,7 +306,7 @@ async def cmd_ffs(ctx):
 @client.command(name='startmpa')
 async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
     hasManagerPermissions = await isManager(ctx)
-    if hasManagerPermissions or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
+    if hasManagerPermissions or ctx.author.id == client.user.id:
         # This checks if Tonk has the deleting permission. If it doesn't, don't run the script at all and just stop.
         try:
             await ctx.message.delete()
@@ -306,7 +316,9 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
             return
         await mpaControl.startmpa(ctx, message, mpaType)
     elif hasManagerPermissions is not None:
-        await ctx.send('You do not have permissions to use this command.')
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_startmpa.name}")
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_startmpa.name}")
 # Closes out the MPA and flushes related data so another MPA can be opened in the same channel at a later date.
 @client.command(name='removempa')
 async def cmd_removempa(ctx):
@@ -314,7 +326,9 @@ async def cmd_removempa(ctx):
     if hasManagerPermissions or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
         await mpaControl.removempa(ctx)
     elif hasManagerPermissions is not None:
-        await ctx.send('You do not have permissions to remove the mpa.')
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_removempa.name}")
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_removempa.name}")
 
 # Adds the user into the EQ list in the EQ channel. Optionally takes a class as an arguement. If one is passed, add the class icon and the user's name into the EQ list.
 @client.command(name='addme', aliases=['reserveme'])
@@ -330,7 +344,9 @@ async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
         await mpaControl.addUser(ctx, user, mpaArg)
         return
     elif hasManagerPermissions is not None:
-        await ctx.send('You do not have permissions to use this command.')
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_add.name}")
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_add.name}")
 
 # Removes the caller from the MPA.
 @client.command(name='removeme')
@@ -346,69 +362,21 @@ async def cmd_remove(ctx, user):
         await mpaControl.removeUser(ctx, user)
         return
     elif hasManagerPermissions is not None:
-        await ctx.send('You do not have permissions to use this command.')
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_remove.name}")
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_remove.name}")
 
 # Changes the class of the caller to another one they specify. Or none if they call for none of the classes.
 @client.command(name='changeclass')
 async def cmd_changeclass(ctx, mpaArg: str = 'none'):
-    inMPA = False
-    if ctx.channel.id in mpaChannels[str(ctx.guild.id)] or ctx.author.top_role.permissions.administrator:
-        if ctx.channel.id in EQTest:
-            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-                expirationDate[ctx.channel.id] = (int(time.mktime(datetime.now().timetuple())) + mpaExpirationCounter)
-            await ctx.message.delete()
-            if len(mpaArg) > 2:
-                if len(mpaArg) == 4 and mpaArg != 'none':
-                    classSplit = re.findall('..', mpaArg)
-                    for item in classSplit:
-                        print(item)
-                    mpaClass1 = classMatch.findClass(classSplit[0])
-                    mpaClass2 = classMatch.findClass(classSplit[1])
-                    print (mpaClass2)
-                    print (BlankMpaClass)
-                    newRoleName = classMatch.findClassName(mpaClass1)
-                    if mpaClass1 == mpaClass2:
-                        mpaClass2 = classMatch.findClass('NoClass')
-                    if classSplit[0] not in heroClasses and classSplit[1] in subbableHeroClasses or str(mpaClass2) == str(BlankMpaClass):
-                        newRole = classes[mpaClass1] + classes[mpaClass2]
-                    elif classSplit[0] in heroClasses or classSplit[1] in heroClasses or str(mpaClass2) == str(BlankMpaClass):
-                        newRole = classes[mpaClass1]
-                    else:
-                        newRole = classes[mpaClass1] + classes[mpaClass2]
-                        newRoleName += f'/{classMatch.findClassName(mpaClass2)}'
-
-                elif len(mpaArg) > 1:
-                    classSplit = re.findall('..', mpaArg)
-                    for item in classSplit:
-                        print(item)
-                    mpaClass1 = classMatch.findClass(classSplit[0])
-                    newRole = classes[mpaClass1]
-                    newRoleName = classMatch.findClassName(mpaClass1)
-                    print(newRole)
-            else:
-                mpaClass = classMatch.findClass(mpaArg)
-                newRole = classes[mpaClass]
-                newRoleName = classMatch.findClassName(mpaClass)
-            for index, item in enumerate(EQTest[ctx.channel.id]):
-                if (type(EQTest[ctx.channel.id][index]) is PlaceHolder):
-                    pass
-                elif ctx.author.name in item:
-                    EQTest[ctx.channel.id].pop(index)
-                    EQTest[ctx.channel.id].insert(index, newRole + '|' + ctx.author.name)
-                    await generateList(ctx, f'```diff\n+ Changed {ctx.author.name}\'s class to ' + newRoleName + '```')
-                    inMPA = True
-                    return
-            if inMPA == False:
-                await generateList(ctx, '```fix\nYou are not in the MPA!```')
+    await mpaControl.changeClass(ctx, mpaArg)
+    return
 
 # Private messages the caller information. Special instructions are added if calling from a certain server.
 @client.command(name='help')
 async def cmd_help(ctx):
-    if ctx.guild.id == serverIDDict["Ishana"] or ctx.guild.id == serverIDDict['SupportServer']:
-        await tonkHelper.tonk_help("ishanahelp", ctx.message)
-    else:
-        await tonkHelper.tonk_help("standardhelp", ctx.message)
-        return
+    await tonkHelper.tonk_help("standardhelp", ctx.message)
+    return
 
 # Private messages the caller information to help them get started with using this bot.
 @client.command(name='gettingstarted')
@@ -427,128 +395,31 @@ async def cmd_test(ctx):
 async def cmd_enablempachannel(ctx):
     serverOnBoarded = ''
     if ctx.author.top_role.permissions.administrator:
-        try:
-            dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-            if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaChannels']):
-                await ctx.send('This channel is already an active MPA channel!')
-                return
-            else:
-                if (len(dbQuery['Items'][0]['mpaChannels'])) > 0:
-                    tonkDB.updateMpaChannels(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
-                else:
-                    tonkDB.addMpaChannel(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
-        except KeyError:
-            print (f'{ctx.guild.id} is not in the config table. Adding...')
-            tonkDB.addMpaChannel(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
-            serverOnBoarded = 'done'
-        # This error indicates that this server is not in the database at all.
-        except IndexError:
-            if len(dbQuery['Items']) < 1:
-                print (f'{ctx.guild.id} is not in the database at all. Adding...')
-                tonkDB.addMpaChannel(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
-                serverOnBoarded = 'done'
-        print (f'{ctx.author.name} ({ctx.author.id}) has added {ctx.channel.id} to the MPA channels for {ctx.guild.id}.')
-        await ctx.send(f'Added channel {ctx.channel.mention} as an MPA channel.')
-        # Check to see if addMpaChannel was called, if it was that means we do not need to run the second batch of read/write ops and stop here.
-        if serverOnBoarded == 'done':
-            return
-        # # Add a blank expiration config to the json file
-        # try:
-        #     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-        #     if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaAutoExpirationChannels']):
-        #         pass
-        #     else:
-        #         print (f'Adding {ctx.channel.id} to the MPA auto expiration config for {ctx.guild.id}')
-        #         tonkDB.updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
-        # except KeyError:
-        #     print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-        #     tonkDB.updateMpaAutoExpirationChannels(ctx.guild.id, ctx.channel.id, dbQuery)
-        
+        await mpaChannel.enablempachannel(ctx)
+        return
     else:
-        await ctx.send('You do not have permissions to do this.')
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_enablempachannel.name}")
         return
 
 # Disables the MPA functions on the channel the command is called in. Removes the channel data from all the related json files.
 @client.command(name='disablempachannel')
 async def cmd_disablempachannel(ctx):
     if ctx.author.top_role.permissions.administrator:
-        dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-        try:
-            if (str(ctx.channel.id)) in (dbQuery['Items'][0]['mpaChannels']):
-                print (dbQuery['Items'][0]['mpaChannels'])
-                for index, item in enumerate(dbQuery['Items'][0]['mpaChannels']):
-                    if str(ctx.channel.id) == str(item):
-                        tonkDB.removeMpaChannel(ctx.guild.id, index, str(datetime.utcnow()))
-                        await ctx.send(f'Removed channel {ctx.channel.mention} from the MPA channels list.')
-                        break
-        except Exception as e:
-            await ctx.send('Error removing the channel from the list.')
-            traceback.print_exc(file=sys.stdout)
-            return
-    return
-
+        await mpaChannel.disablempachannel(ctx)
+        return
+    else:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_disablempachannel.name}")
+        return
 
 # This sets the value for the "Meeting in" section of the MPA list.
 @client.command(name='setmpablock')
 async def cmd_setmpablock(ctx, blockNumber):
     if ctx.author.top_role.permissions.administrator:
-        try:
-            if isinstance(int(blockNumber), int):
-                if len(str(blockNumber)) > 32:
-                    await ctx.send('That number is too big! Please try again with a smaller number!')
-                    return
-            else:
-                if blockNumber.lower() == 'clear':
-                    pass
-                else:
-                    await ctx.send('Please provide just the number!')
-                    return
-        except ValueError:
-            if blockNumber.lower() == 'clear':
-                pass
-            else:
-                await ctx.send('Please provide just the number!')
-                return
-        try:
-            dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-            if (str(ctx.channel.id)) not in (dbQuery['Items'][0]['mpaChannels']):
-                await ctx.send(f'This channel is not enabled as an mpa channel. Please enable mpa functions for this channel with `{commandPrefix}enablempachannel`')
-                return
-            if blockNumber == dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}']['mpaBlock']:
-                await ctx.send(f'This server is already set for block {blockNumber}!')
-                return
-            elif blockNumber.lower() == 'clear':
-                tonkDB.removeMpaBlockNumber(ctx.guild.id, ctx.channel.id, str(datetime.utcnow()))
-                await ctx.send('Successfully removed the block from the MPA configuration.')
-                return
-            else:
-                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
-                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
-                return
-        except IndexError:
-            # If indexerror is called, it means the server that is calling this command does not exist in the database and they need to enable an mpachannel to be registered onto the db.
-            if len(dbQuery['Items']) < 1:
-                await ctx.send(f'Please enable the channel to be used as an MPA channel first with `{commandPrefix}enablempachannel`')
-                return
-        except KeyError as e:
-            # There are a variety of different reasons why KeyErrors generate. Different missing keys will indicate different reasons.
-            # If mpaConfig is the missing key, it means this server does not have any mpaConfigs applied to it previously.
-            if e.args[0] == 'mpaConfig':
-                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
-                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
-            # Channel ID being the missing key indicates the channel ID is not in the mpaConfig list before.
-            elif e.args[0] == str(ctx.channel.id):
-                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
-                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
-            # mpaBlock missing means the channel ID does exist in the mpaConfig item, but does not have any mpaBlock variables configured for it.
-            elif e.args[0] == 'mpaBlock':
-                tonkDB.addMpaBlockNumber(ctx.guild.id, ctx.channel.id, blockNumber, str(datetime.utcnow()))
-                await ctx.send(f'The MPA block number for this channel is set to {blockNumber}.')
-            # Dump any other errors I cant think of.
-            else:
-                traceback.print_exc(file=sys.stdout)
-                await ctx.send('An error occurred attempting to set this config flag. Please check the console for more details.')
-            return
+        await mpaChannel.setmpablock(ctx, blockNumber)
+        return
+    else:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_setmpablock.name}")
+        return
 
 
 # Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
@@ -622,7 +493,13 @@ async def cmd_disablempaexpiration(ctx):
 # Opens the MPA to non-approved roles. Only usable in certain servers.
 @client.command(name='openmpa')
 async def cmd_openmpa(ctx):
-    await mpaControl.openmpa(ctx)
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
+        await mpaControl.openmpa(ctx)
+    elif hasManagerPermissions is not None:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_openmpa.name}")
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_openmpa.name}")
     return
     # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
     #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
@@ -647,7 +524,13 @@ async def cmd_openmpa(ctx):
 # Closes the MPA to only approved roles. Only usable in certain servers.
 @client.command(name='closempa')
 async def cmd_closempa(ctx):
-    await mpaControl.closempa(ctx)
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
+        await mpaControl.closempa(ctx)
+    elif hasManagerPermissions is not None:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_openmpa.name}")
+    else:
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_openmpa.name}")
     return
     # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
     #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict or ctx.author.top_role.permissions.administrator:
