@@ -60,6 +60,9 @@ def findRoleID(roleName, message):
 
 
 async def isManager(ctx):
+    # Administrator permissions will grant permissions regardless of role.
+    if ctx.author.top_role.permissions.administrator:
+        return True
     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
     mpaManagerRoles = parseDB.getMpaManagerRoles(ctx.channel.id, dbQuery)
     mpaChannelList = dbQuery['Items'][0]['mpaChannels']
@@ -323,8 +326,8 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
 @client.command(name='removempa')
 async def cmd_removempa(ctx):
     hasManagerPermissions = await isManager(ctx)
-    if hasManagerPermissions or ctx.author.top_role.permissions.administrator or ctx.author.id == client.user.id:
-        await mpaControl.removempa(ctx)
+    if hasManagerPermissions or ctx.author.id == client.user.id:
+        await mpaControl.removempa(ctx, client)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_removempa.name}")
     else:
@@ -340,7 +343,7 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
 @client.command(name='add', aliases=['reserve'])
 async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
     hasManagerPermissions = await isManager(ctx)
-    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
+    if hasManagerPermissions:
         await mpaControl.addUser(ctx, user, mpaArg)
         return
     elif hasManagerPermissions is not None:
@@ -358,7 +361,7 @@ async def cmd_removeme(ctx):
 @client.command(name='remove')
 async def cmd_remove(ctx, user):
     hasManagerPermissions = await isManager(ctx)
-    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
+    if hasManagerPermissions:
         await mpaControl.removeUser(ctx, user)
         return
     elif hasManagerPermissions is not None:
@@ -494,7 +497,7 @@ async def cmd_disablempaexpiration(ctx):
 @client.command(name='openmpa')
 async def cmd_openmpa(ctx):
     hasManagerPermissions = await isManager(ctx)
-    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
+    if hasManagerPermissions:
         await mpaControl.openmpa(ctx)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_openmpa.name}")
@@ -525,7 +528,7 @@ async def cmd_openmpa(ctx):
 @client.command(name='closempa')
 async def cmd_closempa(ctx):
     hasManagerPermissions = await isManager(ctx)
-    if hasManagerPermissions or ctx.author.top_role.permissions.administrator:
+    if hasManagerPermissions:
         await mpaControl.closempa(ctx)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_openmpa.name}")

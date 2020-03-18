@@ -17,6 +17,7 @@ from assetsTonk import sendErrorMessage
 def is_pinned(m):
    return m.pinned != True
 
+
 # Converts EQ List Placeholder objects to strings and then updates the DB with the new batch of information.
 async def convertAndUpdateMPADBTable(ctx, listMessage, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate):
     tonkDB.updateMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQList, SubList, privateMpa, participantCount, maxParticipants, str(expirationDate), str(datetime.utcnow()))
@@ -142,13 +143,15 @@ async def startmpa(ctx, broadcast, mpaType):
 
 
 #This function actually performs the removempa command. This is a separate function so that the bot can remove mpas as well.
-async def removempa(ctx):
+async def removempa(ctx, client):
     try:
         dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
         mpaChannelList = dbQuery['Items'][0]['mpaChannels']
         activeMpaChannels = dbQuery['Items'][0]['activeMPAs']
         mpaMessageID = next(iter(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']))
-        startTime = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][mpaMessageID]
+        startTime = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][mpaMessageID]['startDate']
+        startTime = datetime.strptime(f"{startTime}", "%Y-%m-%d %H:%M:%S.%f")
+        mpaMessage = await ctx.fetch_message(mpaMessageID)
     except KeyError as e:
         await sendErrorMessage.mpaChannelNotEnabled(ctx, removempa.__name__)
         return
@@ -157,8 +160,13 @@ async def removempa(ctx):
         return
     if str(ctx.channel.id) in activeMpaChannels.keys():
         try:
+            def is_bot(m):
+                return m.author == client.user
             tonkDB.removeMPATable(ctx.guild.id, ctx.channel.id, mpaMessageID, str(datetime.utcnow()))
             print(ctx.author.name + ' Closed an MPA on ' + ctx.guild.name)
+            # This is to delete the list and the broadcast message, will only delete messages that are made by the bot
+            await ctx.channel.purge(limit=2, around=startTime, check=is_bot)
+            # Deletes the rest of the content in the channel, except for pinned messages
             await ctx.channel.purge(limit=100, after=startTime, check=is_pinned)
         except KeyError:
             pass
