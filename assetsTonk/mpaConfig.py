@@ -15,13 +15,23 @@ async def cmdConfigParser(ctx, *args):
     # Display active configurations on a given server/channel
     elif args[0] == 'show':
         try:
-            dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
-            try:
-                channelID = int(args[2])
-                mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].keys()}
-            except TypeError:
-                channelID = None
-                mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()}
+            if args[1].lower() == 'default':
+                defaultConfigQuery = tonkDB.configDefaultQueryDB()
+                mpaConfig = {key.lower() for key in defaultConfigQuery['Items'][0]['mpaConfig'].keys()}
+                try:
+                    if args[2].lower() in mpaConfig:
+                        await showDefaultConfig(ctx, defaultConfigQuery, args[2])
+                except IndexError:
+                    await sendErrorMessage.invalidArguments(ctx, 'badDefaultArguments', cmdConfigParser.__name__)
+                return
+            else:
+                try:
+                    dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
+                    channelID = int(args[2])
+                    mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].keys()}
+                except TypeError:
+                    channelID = None
+                    mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()}
             if args[1] == 'all':
                 if channelID is not None:
                     await showAllConfigs(ctx, dbQuery, channelID)
@@ -92,4 +102,7 @@ async def showChannelConfig(ctx, dbQuery, configName, channelID: str = 'currentC
     return
 
 async def showServerConfig(ctx, dbQuery, configName):
+    return
+
+async def showDefaultConfig(ctx, dbQuery, configName):
     return
