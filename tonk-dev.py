@@ -296,13 +296,23 @@ async def cmd_checkmpamanagerperm(ctx):
 # Clears out anything that wasn't posted by the bot in an MPA channel. Useful for servers where the MPA channel was filled with chatter and the list was hard to see.
 @client.command(name='ffs')
 async def cmd_ffs(ctx):
-    if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-        if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict['Tenj']:
-            await ctx.channel.purge(limit=100, after=getTime, check=is_not_bot)
-        else:
-            await ctx.channel.send('You lack the permissions to use this command.')
+    hasManagerPermissions = await isManager(ctx)
+    if hasManagerPermissions:
+        await utils.ffs(ctx, client)
+        return
+    elif hasManagerPermissions is not None:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_ffs.name}")
+        return
     else:
-        await ctx.channel.send('This command can only be used in a MPA channel.')
+        await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_ffs.name}")
+        return
+    # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
+    #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict['Tenj']:
+    #         await ctx.channel.purge(limit=100, after=getTime, check=is_not_bot)
+    #     else:
+    #         await ctx.channel.send('You lack the permissions to use this command.')
+    # else:
+    #     await ctx.channel.send('This command can only be used in a MPA channel.')
 
 # Starts an MPA with the given arguements. Message and mpaType is optional, and will just fill in with the given data if nothing was put into the command.
 # Calls function_startmpa to actually do the legwork
