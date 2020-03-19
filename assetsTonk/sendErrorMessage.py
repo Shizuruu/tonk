@@ -17,6 +17,6 @@ async def noCommandPermissions(ctx, commandName):
 
 async def invalidArguments(ctx, invalidType, commandName):
     errorID = 'otamay'
-    print (f'Error {invalidArguments.__name__} called by {ctx.author.name} (ID: {ctx.author.id}), command called from: {commandName}')
+    print (f'Error {invalidArguments.__name__} ({invalidType}) called by {ctx.author.name} (ID: {ctx.author.id}), command called from: {commandName}')
     await ctx.send('Invalid parameter specified')
     return

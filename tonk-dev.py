@@ -23,7 +23,7 @@ from assetsTonk import mpaControl
 from assetsTonk import parseDB
 from assetsTonk import sendErrorMessage
 from assetsTonk import mpaChannel
-
+from assetsTonk import mpaConfig
 
 # These are all the constants that will be used throughout the bot. Most if not all of these are dictionaries that allow for different settings per server/channel to be used.
 print ('Beginning bot startup process...\n')
@@ -482,6 +482,15 @@ async def cmd_disablempaexpiration(ctx):
         else:
             await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
             return
+
+@client.command(name='config')
+async def cmd_config(ctx, *args):
+    if ctx.author.top_role.permissions.administrator:
+        await mpaConfig.cmdConfigParser(ctx, *args)
+    else:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_config.name}")
+        return
+
 
 # Debugging command
 # @client.command(name='eval')

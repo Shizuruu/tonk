@@ -39,8 +39,10 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
             'guildID': f"{guildID}",
             'mpaChannels': [f"{newChannelID}"],
             'lastUpdated': f"{timeStamp}",
-            'mpaServerConfig':{},
-            'mpaConfig': {f"{newChannelID}": {}},
+            'mpaConfig': {f"{newChannelID}": {
+                'global': {}
+            }
+            },
             'activeMPAs': {f"{newChannelID}": {}}
         }
     )
@@ -118,20 +120,20 @@ def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
     )
     return
 
-def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
-    dbTable.update_item(
-        Key={
-            'guildID': f"{guildID}"
-        },
-        UpdateExpression=f"REMOVE mpaConfig.#channelID.mpaBlock SET lastUpdated = :timestamp",
-        ExpressionAttributeNames={
-            '#channelID': f"{channelID}"
-        },
-        ExpressionAttributeValues={
-            ':timestamp': f"{timeStamp}"
-        }
-    )
-    return
+# def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
+#     dbTable.update_item(
+#         Key={
+#             'guildID': f"{guildID}"
+#         },
+#         UpdateExpression=f"REMOVE mpaConfig.#channelID.mpaBlock SET lastUpdated = :timestamp",
+#         ExpressionAttributeNames={
+#             '#channelID': f"{channelID}"
+#         },
+#         ExpressionAttributeValues={
+#             ':timestamp': f"{timeStamp}"
+#         }
+#     )
+#     return
 
 def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, maxParticipants, expirationDate, startDate):
     dbTable.update_item(
@@ -195,3 +197,97 @@ def removeMPATable(guildID, channelID, messageID, timeStamp):
             ':timestamp': f"{timeStamp}"
         }
     )
+
+def updateRoleList(guildID, channelID, configName, roleID, timeStamp):
+    # Theres this really weird bug where if the list item does not exist in the DB, this statement does not create the key and appends the list.
+    # Needs investigation.
+    if channelID == 'globalKeyNotExists':
+        channelID = 'global'
+        return dbTable.update_item(
+            Key={
+                'guildID': f"{guildID}"
+            },
+            UpdateExpression=f"SET mpaConfig.#channelID.#configName = :roleID, lastUpdated = :timestamp",
+            ExpressionAttributeNames={
+                '#channelID': f"{channelID}",
+                '#configName': f"{configName}"
+            },
+            ExpressionAttributeValues={
+                ':timestamp': f"{timeStamp}",
+                ':roleID': {
+                    'mpaManagerRoles': [f"{roleID}"]
+                }
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+    elif channelID == 'default':
+        return dbTable.update_item(
+            Key={
+                'guildID': "defaults"
+            },
+            UpdateExpression=f"SET mpaConfig.#configName = list_append(mpaConfig.#configName, :roleID), lastUpdated = :timestamp",
+            ExpressionAttributeNames={
+                '#channelID': f"{channelID}",
+                '#configName': f"{configName}"
+            },
+            ExpressionAttributeValues={
+                ':timestamp': f"{timeStamp}",
+                ':roleID': [f"{roleID}"]
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+    else:
+        return dbTable.update_item(
+            Key={
+                'guildID': f"{guildID}"
+            },
+            UpdateExpression=f"SET mpaConfig.#channelID.#configName = list_append(mpaConfig.#channelID.#configName, :roleID), lastUpdated = :timestamp",
+            ExpressionAttributeNames={
+                '#channelID': f"{channelID}",
+                '#configName': f"{configName}"
+            },
+            ExpressionAttributeValues={
+                ':timestamp': f"{timeStamp}",
+                ':roleID': [f"{roleID}"]
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+
+
+    return None
+
+def updateConfig(guildID, channelID, configName, configValue, timeStamp):
+    if channelID != '':
+        return dbTable.update_item(
+            Key={
+                'guildID': f"{guildID}"
+            },
+            UpdateExpression=f"SET mpaConfig.#channelID.#configName = :configValue, lastUpdated = :timestamp",
+            ExpressionAttributeNames={
+                '#channelID': f"{channelID}",
+                '#configName': f"{configName}"
+            },
+            ExpressionAttributeValues={
+                ':timestamp': f"{timeStamp}",
+                ':configValue': f"{configValue}"
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+    elif channelID == 'default':
+        return dbTable.update_item(
+            Key={
+                'guildID': "defaults"
+            },
+            UpdateExpression=f"SET mpaConfig.#configName = :configValue, lastUpdated = :timestamp",
+            ExpressionAttributeNames={
+                '#channelID': f"{channelID}",
+                '#configName': f"{configName}"
+            },
+            ExpressionAttributeValues={
+                ':timestamp': f"{timeStamp}",
+                ':configValue': f"{configValue}"
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+
+    return None
