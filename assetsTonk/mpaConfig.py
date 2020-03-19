@@ -59,7 +59,7 @@ async def cmdConfigParser(ctx, *args):
                     await showChannelConfig(ctx, dbQuery, args[1])
                 return
             elif args[1].lower() == 'server':
-                mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaServerConfig'].keys()}
+                mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig']['global'].keys()}
                 try:
                     if args[2].lower() in mpaConfig:
                         await showServerConfig(ctx, dbQuery, args[2])
@@ -215,7 +215,7 @@ async def showServerConfig(ctx, dbQuery, configName):
     em = discord.Embed()
     em.set_author(name=f'Results for config {configName}')
     # Sets all keys to lowercase, making search arguments case insensitive
-    dbQuery_lower = {k.lower():v for k,v in dbQuery['Items'][0]['mpaServerConfig'].items()}
+    dbQuery_lower = {k.lower():v for k,v in dbQuery['Items'][0]['mpaConfig']['global'].items()}
     configName = configName.lower()
     try:
         resultValue = dbQuery_lower[f'{configName}']
