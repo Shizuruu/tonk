@@ -1,7 +1,14 @@
 import asyncio
 import sys
 import re
+import json
 
+helpFile = open('assetsTonk/helpTexts/configUsage.json')
+helpDict = json.loads(helpFile.read())
+ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+ConfigDict = json.loads(ConfigFile.read())
+commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
+commandPrefix = f"{commandPrefix}config"
 
 async def mpaChannelNotEnabled(ctx, commandName):
     errorID = 'igama'
@@ -15,8 +22,58 @@ async def noCommandPermissions(ctx, commandName):
     await ctx.send(f'You do not have permissions to use this command.\nError ID: {errorID}')
     return
 
-async def invalidArguments(ctx, invalidType, commandName):
+async def invalidArguments(ctx, invalidType, commandName, commandArgs):
     errorID = 'otamay'
     print (f'Error {invalidArguments.__name__} ({invalidType}) called by {ctx.author.name} (ID: {ctx.author.id}), command called from: {commandName}')
-    await ctx.send('Invalid parameter specified')
+    #await ctx.send('Invalid parameter specified')
+    em = discord.Embed(color=discord.Colour(value=int("ce0000", 16)))
+    em.set_author(name="Invalid Parameter specified")
+    if invalidType == 'invalidChannelConfigSet':
+        changeType = 'set'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
+            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+            em.add_field(name='Example', value=f"`{helpDict[f'{commandArgs}']['example']}`", inline=False)
+    elif invalidType == 'invalidChannelConfigRoleRemove':
+        changeType = 'remove'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+    elif invalidType == 'invalidChannelConfigRemove':
+        changeType = 'remove'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+    elif invalidType == 'invalidServerConfigSet':
+        changeType = 'set server'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
+            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+            em.add_field(name='Example', value=f"`{helpDict[f'{commandArgs}']['example']}`", inline=False)
+    elif invalidType == 'invalidServerConfigRoleRemove':
+        changeType = 'remove server'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+    elif invalidType == 'invalidServerConfigRemove':
+        changeType = 'remove server'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+    elif invalidType == 'invalidDefaultConfigSet':
+        changeType = 'set default'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
+            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+            em.add_field(name='Example', value=f"`{helpDict[f'{commandArgs}']['example']}`", inline=False)
+    elif invalidType == 'invalidDefaultConfigRoleRemove':
+        changeType = 'remove default'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+    elif invalidType == 'invalidDefaultConfigRemove':
+        changeType = 'remove default'
+        if commandArgs in helpDict.keys():
+            em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+    else:
+        em.add_field(name='No help found', value="No Usage doc available for this flag.", inline=False)
+    await ctx.send('', embed=em)
     return

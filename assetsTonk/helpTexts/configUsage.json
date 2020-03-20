@@ -1,0 +1,56 @@
+{
+    "activeServerSlot": {
+        "setUsage": "activeServerSlot <emojiID>",
+        "where": "<emojiID> - The ID of the emoji you want to as the icon when slots in an MPA are filled",
+        "example": "activeServerSlot <:activeslot:321415326765475674>",
+        "removeUsage": "remove activeServerSlot"
+    },
+    "inactiveServerSlot": {
+        "setUsage": "inactiveServerSlot <emojiID>",
+        "where": "<emojiID> - The ID of the emoji you want to as the icon when slots in an MPA are not filled",
+        "example": "activeServerSlot <:inactiveslot:321415326765475674>",
+        "removeUsage": "remove inactiveServerSlot"
+    },
+    "embedColor": {
+        "setUsage": "embedColor <hexcolorcode>",
+        "where": "`<hexcolorcode>` - The color in hex format (#xxxxxx). If you do not know the color in hex, use a tool such as google's hex color picker.",
+        "example": "embedColor #00ddff",
+        "removeUsage": "remove embedColor"
+    },
+    "mpaBlock": {
+        "setUsage": "mpaBlock <blockNumber>",
+        "where": "`<blockNumber>` - The desired block number to meet at.",
+        "example": "mpaBlock 222",
+        "removeUsage": "remove mpaBlock"
+    },
+    "mpaExpirationEnabled": {
+        "setUsage": "mpaExpirationEnabled <true/false>",
+        "where": "`<true/false>` - to true if you want to automatically close MPAs after a certain amount of time has passed without any action being done to the list. to false to disable this feature.",
+        "example": "mpaExpirationEnabled true",
+        "removeUsage": "remove mpaExpirationEnabled"
+    },
+    "mpaExpirationTime": {
+        "setUsage": "mpaExpirationTime <number><h/m/s>",
+        "where": "`<number>` - Desired number in either hours, minutes, or seconds\n`<h/m/s>` - h for hours, m for minutes, s for seconds",
+        "example": "mpaExpirationTime 2h",
+        "removeUsage": "remove mpaExpirationTime"
+    },
+    "mpaManagerRoles": {
+        "setUsage": "mpaManagerRoles <role>",
+        "where": "`<role>` - Desired role to add to the list. Can be either the ID of the role or you can @ the role",
+        "example": "mpaManagerRoles 686435014074360237\nmpaManagerRoles @Manager Role",
+        "removeUsage": "remove mpaManagerRoles <role>"
+    },
+    "privateMpa": {
+        "setUsage": "privateMpa <true/false>",
+        "where": "`<true/false>` - Setting to true restricts access to the MPA to whitelisted roles only. Setting to false disables this rule.",
+        "example": "privateMpa true",
+        "removeUsage": "remove privateMpa"
+    },
+    "mpaAllowedRoles": {
+        "setUsage": "mpaAllowedRoles <role>",
+        "where": "`<role>` - Desired role to add to the list. Can be either the ID of the role or you can @ the role.",
+        "example": "mpaAllowedRoles 686435014074360237\nmpaAllowedRoles @Manager Role",
+        "removeUsage": "remove mpaAllowedRoles <role>"
+    }
+}

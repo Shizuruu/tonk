@@ -199,7 +199,7 @@ async def addme(ctx, mpaArg: str = 'none'):
                     allowJoinMpa = True
             else:
                 allowJoinMpa = True
-        if (allowJoinMpa == False and bool(mpaDBDict['privateMpa']) == False):
+        if (allowJoinMpa == False and bool(mpaDBDict['privateMpa'])):
             await ctx.send('You are not whitelisted to join this MPA.')
             await ctx.message.delete()
             return
