@@ -4,6 +4,7 @@ import re
 import discord
 import traceback
 import datetime
+import json
 from datetime import datetime
 
 from assetsTonk import sendErrorMessage
@@ -14,6 +15,8 @@ from assetsTonk import parseDB
 ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 botOwnerID = ConfigDict['OWNERID']
+embedColor = discord.Colour(value=int("14cc00", 16))
+failEmbedColor = discord.Colour(value=int("ce0000", 16))
 
 # This function takes the message and breaks the arguments down (separated by spaces) and then calls the appropriate functions or throws the appropriate errors based on the input recieved.
 async def cmdConfigParser(ctx, *args):
@@ -45,13 +48,13 @@ async def cmdConfigParser(ctx, *args):
                         channelID = ctx.message.channel_mentions[0].id
                     else:
                         channelID = int(args[2])
-                    mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].keys()}
+                    mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].keys()
                 except IndexError:
                     channelID = None
-                    mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()}
+                    mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
                 except TypeError:
                     channelID = None
-                    mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()}
+                    mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
                 except ValueError:
                     channelID = None
                     mpaConfig = {}
@@ -223,7 +226,7 @@ async def cmdConfigParser(ctx, *args):
         return
     return
 async def showAllConfigs(ctx, dbQuery, channelID: str = 'allChannels'):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     if channelID == 'allChannels':
         channelID = str(ctx.channel.id)
         em.set_author(name=f'Results')
@@ -247,25 +250,23 @@ async def showAllConfigs(ctx, dbQuery, channelID: str = 'allChannels'):
     return
 
 async def showNothing(ctx, configName):
-    em = discord.Embed()
+    em = discord.Embed(color=failEmbedColor)
     em.set_author(name=f'Error')
     em.add_field(name='Nothing found!', value=f'Nothing was found for config {configName}')
     await ctx.send('', embed=em)
     return
 
 async def showChannelConfig(ctx, dbQuery, configName, channelID: str = 'currentChannel'):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     if channelID == 'currentChannel':
         channelID = str(ctx.channel.id)
         em.set_author(name=f'Results for config {configName}')
     else:
         em.set_author(name=f'Results for config {configName} for channel ID {channelID}')
-    # Sets all keys to lowercase, making search arguments case insensitive
-    dbQuery_lower = {k.lower():v for k,v in dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].items()}
-    configName = configName.lower()
     try:
-        resultValue = dbQuery_lower[f'{configName}']
+        resultValue = dbQuery[f'{configName}']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -294,14 +295,12 @@ async def showChannelConfig(ctx, dbQuery, configName, channelID: str = 'currentC
     return
 
 async def showServerConfig(ctx, dbQuery, configName):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     em.set_author(name=f'Results for config {configName}')
-    # Sets all keys to lowercase, making search arguments case insensitive
-    dbQuery_lower = {k.lower():v for k,v in dbQuery['Items'][0]['mpaConfig']['global'].items()}
-    configName = configName.lower()
     try:
-        resultValue = dbQuery_lower[f'{configName}']
+        resultValue = dbQuery[f'{configName}']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -330,14 +329,12 @@ async def showServerConfig(ctx, dbQuery, configName):
     return
 
 async def showDefaultConfig(ctx, dbQuery, configName):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     em.set_author(name=f'Results for config {configName}')
-    # Sets all keys to lowercase, making search arguments case insensitive
-    dbQuery_lower = {k.lower():v for k,v in dbQuery['Items'][0]['mpaConfig'].items()}
-    configName = configName.lower()
     try:
-        resultValue = dbQuery_lower[f'{configName}']
+        resultValue = dbQuery[f'{configName}']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -367,7 +364,7 @@ async def showDefaultConfig(ctx, dbQuery, configName):
 
 
 async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str = 'currentChannel'):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     if channelID == 'currentChannel':
         channelID = str(ctx.channel.id)
         em.set_author(name=f'Results for config {configName}')
@@ -377,6 +374,7 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig'][f'{channelID}']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -408,7 +406,7 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
     else:
         updateDB = tonkDB.updateConfig(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
+            em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__)
             return
@@ -416,12 +414,12 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
         return
 
 async def setServerConfig(ctx, dbQuery, configName, configValue):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     em.set_author(name=f'Server Config Results')
-    # Sets all keys to lowercase, making search arguments case insensitive
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig']['global']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -439,7 +437,6 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleSet', setServerConfig.__name__)
                 return
         try:
-            print (resultValue)
             if str(configValue) in resultValue[f'{configName}']:
                 await sendErrorMessage.invalidArguments(ctx, 'ItemAlreadyExists', setServerConfig.__name__) 
                 return
@@ -467,14 +464,14 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
             else:
                 updateDB = tonkDB.updateConfig(ctx.guild.id, 'global', configName, configValue, str(datetime.utcnow()))
             if updateDB is not None:
-                em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
+                em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
             else:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleSet', setChannelConfig.__name__)
                 return
         except KeyError:
             updateDB = tonkDB.updateConfig(ctx.guild.id, 'globalKeyNotExists', configName, configValue, str(datetime.utcnow()))
             if updateDB is not None:
-                em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
+                em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
             else:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__)
                 return
@@ -482,12 +479,12 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
         return
 
 async def setDefaultConfig(ctx, dbQuery, configName, configValue):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     em.set_author(name=f'Results')
-    # Sets all keys to lowercase, making search arguments case insensitive
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -515,7 +512,7 @@ async def setDefaultConfig(ctx, dbQuery, configName, configValue):
     else:
         updateDB = tonkDB.updateConfig(ctx.guild.id, 'default', configName, configValue, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
+            em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigSet', setDefaultConfig.__name__)
             return
@@ -524,7 +521,7 @@ async def setDefaultConfig(ctx, dbQuery, configName, configValue):
 
 
 async def removeChannelConfig(ctx, dbQuery, configName, configValue, channelID: str = 'currentChannel'):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     if channelID == 'currentChannel':
         channelID = str(ctx.channel.id)
         em.set_author(name=f'Results for config {configName}')
@@ -534,6 +531,7 @@ async def removeChannelConfig(ctx, dbQuery, configName, configValue, channelID: 
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig'][f'{channelID}']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -569,7 +567,7 @@ async def removeChannelConfig(ctx, dbQuery, configName, configValue, channelID: 
     else:
         updateDB = tonkDB.removeConfig(ctx.guild.id, channelID, configName, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'Success:', value=f'Removed {configName}', inline=False)
+            em.add_field(name=f'Success:', value=f'Successfully removed {configName}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigRemove', removeChannelConfig.__name__)
             return
@@ -577,12 +575,13 @@ async def removeChannelConfig(ctx, dbQuery, configName, configValue, channelID: 
         return
 
 async def removeServerConfig(ctx, dbQuery, configName, configValue):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     em.set_author(name=f'Results')
     # Sets all keys to lowercase, making search arguments case insensitive
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig']['global']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -620,7 +619,7 @@ async def removeServerConfig(ctx, dbQuery, configName, configValue):
     else:
         updateDB = tonkDB.removeConfig(ctx.guild.id, 'global', configName, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'Success:', value=f'Removed {configName}', inline=False)
+            em.add_field(name=f'Success:', value=f'Successfully removed {configName}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRemove', removeChannelConfig.__name__)
             return
@@ -628,12 +627,13 @@ async def removeServerConfig(ctx, dbQuery, configName, configValue):
         return
 
 async def removeDefaultConfig(ctx, dbQuery, configName, configValue):
-    em = discord.Embed()
+    em = discord.Embed(color=embedColor)
     em.set_author(name=f'Results')
     # Sets all keys to lowercase, making search arguments case insensitive
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig']
     except KeyError:
+        em = discord.Embed(color=failEmbedColor)
         traceback.print_exc(file=sys.stdout)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
@@ -671,7 +671,7 @@ async def removeDefaultConfig(ctx, dbQuery, configName, configValue):
     else:
         updateDB = tonkDB.removeConfig(ctx.guild.id, 'default', configName, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'Success:', value=f'Removed {configName}', inline=False)
+            em.add_field(name=f'Success:', value=f'Successfully removed {configName}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigRemove', removeChannelConfig.__name__)
             return
