@@ -10,6 +10,11 @@ from assetsTonk import sendErrorMessage
 from assetsTonk import tonkDB
 from assetsTonk import parseDB
 
+
+ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+ConfigDict = json.loads(ConfigFile.read())
+botOwnerID = ConfigDict['OWNERID']
+
 # This function takes the message and breaks the arguments down (separated by spaces) and then calls the appropriate functions or throws the appropriate errors based on the input recieved.
 async def cmdConfigParser(ctx, *args):
     if len(args) < 2:
@@ -19,15 +24,20 @@ async def cmdConfigParser(ctx, *args):
     elif args[0] == 'show':
         try:
             if args[1].lower() == 'default':
-                defaultConfigQuery = tonkDB.configDefaultQueryDB()
-                mpaConfig = {key.lower() for key in defaultConfigQuery['Items'][0]['mpaConfig'].keys()}
-                try:
-                    if args[2].lower() in mpaConfig:
-                        await showDefaultConfig(ctx, defaultConfigQuery, args[2])
-                except IndexError:
-                    traceback.print_exc(file=sys.stdout)
-                    await sendErrorMessage.invalidArguments(ctx, 'badShowDefaultArguments', cmdConfigParser.__name__)
-                return
+                # Only the bot owner can read and modify defaults.
+                if ctx.author.id == botOwnerID:
+                    defaultConfigQuery = tonkDB.configDefaultQueryDB()
+                    mpaConfig = {key.lower() for key in defaultConfigQuery['Items'][0]['mpaConfig'].keys()}
+                    try:
+                        if args[2].lower() in mpaConfig:
+                            await showDefaultConfig(ctx, defaultConfigQuery, args[2])
+                    except IndexError:
+                        traceback.print_exc(file=sys.stdout)
+                        await sendErrorMessage.invalidArguments(ctx, 'badShowDefaultArguments', cmdConfigParser.__name__)
+                    return
+                else:
+                    await sendErrorMessage.noCommandPermissions(ctx, cmdConfigParser.__name__)
+                    return
             else:
                 try:
                     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
@@ -79,15 +89,19 @@ async def cmdConfigParser(ctx, *args):
     elif args[0] == 'set':
         try:
             if args[1].lower() == 'default':
-                defaultConfigQuery = tonkDB.configDefaultQueryDB()
-                mpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
-                try:
-                    if args[2].lower() in mpaConfig:
-                        await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
-                except IndexError:
-                    traceback.print_exc(file=sys.stdout)
-                    await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
-                return
+                if ctx.author.id == botOwnerID:
+                    defaultConfigQuery = tonkDB.configDefaultQueryDB()
+                    mpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                    try:
+                        if args[2].lower() in mpaConfig:
+                            await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
+                    except IndexError:
+                        traceback.print_exc(file=sys.stdout)
+                        await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
+                    return
+                else:
+                    await sendErrorMessage.noCommandPermissions(ctx, cmdConfigParser.__name__)
+                    return
             try:
                 dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
                 defaultConfigQuery = tonkDB.configDefaultQueryDB()
@@ -145,17 +159,20 @@ async def cmdConfigParser(ctx, *args):
     # Clears configurations
     elif args[0] == 'remove' or args[0] == 'clear':
         try:
-            print (args)
             if args[1].lower() == 'default':
-                defaultConfigQuery = tonkDB.configDefaultQueryDB()
-                mpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
-                try:
-                    if args[2].lower() in mpaConfig:
-                        await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
-                except IndexError:
-                    traceback.print_exc(file=sys.stdout)
-                    await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
-                return
+                if ctx.author.id == botOwnerID:
+                    defaultConfigQuery = tonkDB.configDefaultQueryDB()
+                    mpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                    try:
+                        if args[2].lower() in mpaConfig:
+                            await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
+                    except IndexError:
+                        traceback.print_exc(file=sys.stdout)
+                        await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
+                    return
+                else:
+                    await sendErrorMessage.noCommandPermissions(ctx, cmdConfigParser.__name__)
+                    return
             try:
                 dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
                 defaultConfigQuery = tonkDB.configDefaultQueryDB()
@@ -269,7 +286,7 @@ async def showChannelConfig(ctx, dbQuery, configName, channelID: str = 'currentC
                 await ctx.send('', embed=em)
                 return
     else:
-        em.add_field(name=f'{configName}:', value=f'{configValue}')
+        em.add_field(name=f'{configName}:', value=f'{resultValue}')
         await ctx.send('', embed=em)
         return
    # em.add_field(name='Value', value=resultValue, inline=False)
@@ -305,7 +322,7 @@ async def showServerConfig(ctx, dbQuery, configName):
                 await ctx.send('', embed=em)
                 return
     else:
-        em.add_field(name=f'{configName}:', value=f'{configValue}')
+        em.add_field(name=f'{configName}:', value=f'{resultValue}')
         await ctx.send('', embed=em)
         return
    # em.add_field(name='Value', value=resultValue, inline=False)
@@ -341,7 +358,7 @@ async def showDefaultConfig(ctx, dbQuery, configName):
                 await ctx.send('', embed=em)
                 return
     else:
-        em.add_field(name=f'{configName}:', value=f'{configValue}')
+        em.add_field(name=f'{configName}:', value=f'{resultValue}')
         await ctx.send('', embed=em)
         return
    # em.add_field(name='Value', value=resultValue, inline=False)
@@ -610,7 +627,7 @@ async def removeServerConfig(ctx, dbQuery, configName, configValue):
         await ctx.send('', embed=em)
         return
 
-async def remvoeDefaultConfig(ctx, dbQuery, configName, configValue):
+async def removeDefaultConfig(ctx, dbQuery, configName, configValue):
     em = discord.Embed()
     em.set_author(name=f'Results')
     # Sets all keys to lowercase, making search arguments case insensitive
