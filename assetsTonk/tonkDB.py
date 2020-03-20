@@ -214,9 +214,7 @@ def updateRoleList(guildID, channelID, configName, roleID, timeStamp):
             },
             ExpressionAttributeValues={
                 ':timestamp': f"{timeStamp}",
-                ':roleID': {
-                    'mpaManagerRoles': [f"{roleID}"]
-                }
+                ':roleID': [f"{roleID}"]
             },
             ReturnValues='UPDATED_NEW'
         )
@@ -252,8 +250,6 @@ def updateRoleList(guildID, channelID, configName, roleID, timeStamp):
             },
             ReturnValues='UPDATED_NEW'
         )
-
-
     return None
 
 def updateConfig(guildID, channelID, configName, configValue, timeStamp):
@@ -289,5 +285,46 @@ def updateConfig(guildID, channelID, configName, configValue, timeStamp):
             },
             ReturnValues='UPDATED_NEW'
         )
+    return None
 
+
+def removeRoleList(guildID, channelID, configName, index, timeStamp):
+    # Theres this really weird bug where if the list item does not exist in the DB, this statement does not create the key and appends the list.
+    # Needs investigation.
+    if channelID == 'default':
+        guildID = 'defaults'
+    return dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"REMOVE mpaConfig.#channelID.#configName[{index}] SET lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}",
+            '#configName': f"{configName}"
+        },
+        ExpressionAttributeValues={
+            ':timestamp': f"{timeStamp}"
+        },
+        ReturnValues='UPDATED_NEW'
+    )
+    return None
+
+
+def removeConfig(guildID, channelID, configName, timeStamp):
+    if channelID == 'default':
+        guildID = 'defaults'
+    return dbTable.update_item(
+        Key={
+            'guildID': f"{guildID}"
+        },
+        UpdateExpression=f"REMOVE mpaConfig.#channelID.#configName SET lastUpdated = :timestamp",
+        ExpressionAttributeNames={
+            '#channelID': f"{channelID}",
+            '#configName': f"{configName}"
+        },
+        ExpressionAttributeValues={
+            ':timestamp': f"{timeStamp}"
+        },
+        ReturnValues='UPDATED_NEW'
+    )
     return None

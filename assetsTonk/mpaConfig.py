@@ -78,10 +78,77 @@ async def cmdConfigParser(ctx, *args):
     # Sets new configurations
     elif args[0] == 'set':
         try:
+            if args[1].lower() == 'default':
+                defaultConfigQuery = tonkDB.configDefaultQueryDB()
+                mpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                try:
+                    if args[2].lower() in mpaConfig:
+                        await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
+                except IndexError:
+                    traceback.print_exc(file=sys.stdout)
+                    await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
+                return
+            try:
+                dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
+                defaultConfigQuery = tonkDB.configDefaultQueryDB()
+                if len(ctx.message.channel_mentions) > 0:
+                    channelID = ctx.message.channel_mentions[0].id
+                else:
+                    channelID = int(args[3])
+                mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].keys()
+                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+            except IndexError:
+                channelID = None
+                mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+            except TypeError:
+                channelID = None
+                mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+            except ValueError:
+                channelID = None
+                mpaConfig = {}
+                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                pass
+            if args[1] in mpaConfig:
+                if channelID is not None:
+                    await setChannelConfig(ctx, dbQuery, args[1], args[2], channelID)
+                else:
+                    await setChannelConfig(ctx, dbQuery, args[1], args[2])
+                return
+            elif args[1] not in mpaConfig and args[1] in defaultMpaConfig:
+                if channelID is not None:
+                    await setChannelConfig(ctx, dbQuery, args[1], args[2], channelID)
+                else:
+                    await setChannelConfig(ctx, dbQuery, args[1], args[2])
+                return
+            elif args[1].lower() == 'server':
+                mpaConfig = dbQuery['Items'][0]['mpaConfig']['global'].keys()
+                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                try:
+                    if args[2] in mpaConfig:
+                        await setServerConfig(ctx, dbQuery, args[2], args[3])
+                    elif args[2] not in mpaConfig and args[2] in defaultMpaConfig:
+                        await setServerConfig(ctx, dbQuery, args[2], args[3])
+                    else:
+                        await showNothing(ctx, args[2])
+                except IndexError:
+                    traceback.print_exc(file=sys.stdout)
+                    await sendErrorMessage.invalidArguments(ctx, 'badSetServerArguments', cmdConfigParser.__name__)
+            else:
+                await showNothing(ctx, args[1])
+                return
+        except IndexError:
+            traceback.print_exc(file=sys.stdout)
+            await sendErrorMessage.invalidArguments(ctx, 'badSetArguments', cmdConfigParser.__name__)
+            return
+    # Clears configurations
+    elif args[0] == 'remove' or args[0] == 'clear':
+        try:
             print (args)
             if args[1].lower() == 'default':
                 defaultConfigQuery = tonkDB.configDefaultQueryDB()
-                mpaConfig = defaultConfigQuery = dbQuery['Items'][0]['mpaConfig'].keys()
+                mpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
                 try:
                     if args[2].lower() in mpaConfig:
                         await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
@@ -112,18 +179,18 @@ async def cmdConfigParser(ctx, *args):
                 pass
             if args[1] in mpaConfig:
                 if channelID is not None:
-                    await setChannelConfig(ctx, dbQuery, args[1], args[2], channelID)
+                    await removeChannelConfig(ctx, dbQuery, args[1], args[2], channelID)
                 else:
-                    await setChannelConfig(ctx, dbQuery, args[1], args[2])
+                    try:
+                        await removeChannelConfig(ctx, dbQuery, args[1], args[2])
+                    except IndexError:
+                        await removeChannelConfig(ctx, dbQuery, args[1], '')
                 return
             elif args[1].lower() == 'server':
                 mpaConfig = dbQuery['Items'][0]['mpaConfig']['global'].keys()
-                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
                 try:
                     if args[2] in mpaConfig:
-                        await setServerConfig(ctx, dbQuery, args[2], args[3])
-                    elif args[2] not in mpaConfig and args[2] in defaultMpaConfig:
-                        await setServerConfig(ctx, dbQuery, args[2], args[3])
+                        await removeServerConfig(ctx, dbQuery, args[2], args[3])
                     else:
                         await showNothing(ctx, args[2])
                 except IndexError:
@@ -136,8 +203,6 @@ async def cmdConfigParser(ctx, *args):
             traceback.print_exc(file=sys.stdout)
             await sendErrorMessage.invalidArguments(ctx, 'badSetArguments', cmdConfigParser.__name__)
             return
-    # Clears configurations
-    elif args[0] == 'remove' or args[0] == 'clear':
         return
     return
 async def showAllConfigs(ctx, dbQuery, channelID: str = 'allChannels'):
@@ -191,20 +256,20 @@ async def showChannelConfig(ctx, dbQuery, configName, channelID: str = 'currentC
     if type(resultValue) is list:
         # Probably not the best way to determine if a key is a role list or not
         if 'role' in configName.lower():
-            if len(resultValue) > 1:
+            if len(resultValue) > 0:
                 for index, item in enumerate(resultValue):
                     foundRole = discord.utils.get(ctx.guild.roles, id=int(item))
                     em.add_field(name=f'{index + 1}', value=f'{foundRole.mention} (ID: {item})', inline=False)
                 await ctx.send('', embed=em)
                 return
         else:
-            if len(resultValue) > 1:
+            if len(resultValue) > 0:
                 for index, item in enumerate(resultValue):
                     em.add_field(name=f'{item + 1}', value=f'{item}', inline=False)
                 await ctx.send('', embed=em)
                 return
     else:
-        em.add_field(name=f'{configName}:', value=f'{resultValue}')
+        em.add_field(name=f'{configName}:', value=f'{configValue}')
         await ctx.send('', embed=em)
         return
    # em.add_field(name='Value', value=resultValue, inline=False)
@@ -227,20 +292,20 @@ async def showServerConfig(ctx, dbQuery, configName):
     if type(resultValue) is list:
         # Probably not the best way to determine if a key is a role list or not
         if 'role' in configName.lower():
-            if len(resultValue) > 1:
+            if len(resultValue) > 0:
                 for index, item in enumerate(resultValue):
                     foundRole = discord.utils.get(ctx.guild.roles, id=int(item))
                     em.add_field(name=f'{index + 1}', value=f'{foundRole.mention} (ID: {item})', inline=False)
                 await ctx.send('', embed=em)
                 return
         else:
-            if len(resultValue) > 1:
+            if len(resultValue) > 0:
                 for index, item in enumerate(resultValue):
                     em.add_field(name=f'{item + 1}', value=f'{item}', inline=False)
                 await ctx.send('', embed=em)
                 return
     else:
-        em.add_field(name=f'{configName}:', value=f'{resultValue}')
+        em.add_field(name=f'{configName}:', value=f'{configValue}')
         await ctx.send('', embed=em)
         return
    # em.add_field(name='Value', value=resultValue, inline=False)
@@ -263,20 +328,20 @@ async def showDefaultConfig(ctx, dbQuery, configName):
     if type(resultValue) is list:
         # Probably not the best way to determine if a key is a role list or not
         if 'role' in configName.lower():
-            if len(resultValue) > 1:
+            if len(resultValue) > 0:
                 for index, item in enumerate(resultValue):
                     foundRole = discord.utils.get(ctx.guild.roles, id=int(item))
                     em.add_field(name=f'{index + 1}', value=f'{foundRole.mention} (ID: {item})', inline=False)
                 await ctx.send('', embed=em)
                 return
         else:
-            if len(resultValue) > 1:
+            if len(resultValue) > 0:
                 for index, item in enumerate(resultValue):
                     em.add_field(name=f'{item + 1}', value=f'{item}', inline=False)
                 await ctx.send('', embed=em)
                 return
     else:
-        em.add_field(name=f'{configName}:', value=f'{resultValue}')
+        em.add_field(name=f'{configName}:', value=f'{configValue}')
         await ctx.send('', embed=em)
         return
    # em.add_field(name='Value', value=resultValue, inline=False)
@@ -315,7 +380,7 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
             await sendErrorMessage.invalidArguments(ctx, 'ItemAlreadyExists', setChannelConfig.__name__) 
             return
         else:
-            updateDB = tonkDB.updateRoleList(ctx.guild.id, ctx.channel.id, configName, configValue, str(datetime.utcnow()))
+            updateDB = tonkDB.updateRoleList(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
         if updateDB is not None:
             em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to {configName}', inline=False)
         else:
@@ -324,9 +389,9 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
         await ctx.send('', embed=em)
         return
     else:
-        updateDB = tonkDB.updateConfig(ctx.guild.id, ctx.channel.id, configName, configValue, str(datetime.utcnow()))
+        updateDB = tonkDB.updateConfig(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'{configName}:', value=f'{resultValue}', inline=False)
+            em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__)
             return
@@ -335,7 +400,7 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
 
 async def setServerConfig(ctx, dbQuery, configName, configValue):
     em = discord.Embed()
-    em.set_author(name=f'Results')
+    em.set_author(name=f'Server Config Results')
     # Sets all keys to lowercase, making search arguments case insensitive
     try:
         resultValue = dbQuery['Items'][0]['mpaConfig']['global']
@@ -357,20 +422,21 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleSet', setServerConfig.__name__)
                 return
         try:
+            print (resultValue)
             if str(configValue) in resultValue[f'{configName}']:
                 await sendErrorMessage.invalidArguments(ctx, 'ItemAlreadyExists', setServerConfig.__name__) 
                 return
             else:
                 updateDB = tonkDB.updateRoleList(ctx.guild.id, 'global', configName, configValue, str(datetime.utcnow()))
             if updateDB is not None:
-                em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to {configName}', inline=False)
+                em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to the server flag {configName}', inline=False)
             else:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleSet', setChannelConfig.__name__)
                 return
         except KeyError:
             updateDB = tonkDB.updateRoleList(ctx.guild.id, 'globalKeyNotExists', configName, configValue, str(datetime.utcnow()))
             if updateDB is not None:
-                em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to {configName}', inline=False)
+                em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to the server flag {configName}', inline=False)
             else:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleSet', setChannelConfig.__name__)
                 return
@@ -384,27 +450,19 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
             else:
                 updateDB = tonkDB.updateConfig(ctx.guild.id, 'global', configName, configValue, str(datetime.utcnow()))
             if updateDB is not None:
-                em.add_field(name=f'{configName}:', value=f'{resultValue}', inline=False)
+                em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
             else:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleSet', setChannelConfig.__name__)
                 return
         except KeyError:
             updateDB = tonkDB.updateConfig(ctx.guild.id, 'globalKeyNotExists', configName, configValue, str(datetime.utcnow()))
             if updateDB is not None:
-                em.add_field(name=f'{configName}:', value=f'{resultValue}', inline=False)
+                em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
             else:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__)
                 return
         await ctx.send('', embed=em)
         return
-        # updateDB = tonkDB.updateConfig(ctx.guild.id, 'global', configName, configValue, str(datetime.utcnow()))
-        # if updateDB is not None:
-        #     em.add_field(name=f'{configName}:', value=f'{resultValue}', inline=False)
-        # else:
-        #     await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__)
-        #     return
-        # await ctx.send('', embed=em)
-        # return
 
 async def setDefaultConfig(ctx, dbQuery, configName, configValue):
     em = discord.Embed()
@@ -440,9 +498,165 @@ async def setDefaultConfig(ctx, dbQuery, configName, configValue):
     else:
         updateDB = tonkDB.updateConfig(ctx.guild.id, 'default', configName, configValue, str(datetime.utcnow()))
         if updateDB is not None:
-            em.add_field(name=f'{configName}:', value=f'{resultValue}', inline=False)
+            em.add_field(name=f'{configName}:', value=f'{configValue}', inline=False)
         else:
             await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigSet', setDefaultConfig.__name__)
+            return
+        await ctx.send('', embed=em)
+        return
+
+
+async def removeChannelConfig(ctx, dbQuery, configName, configValue, channelID: str = 'currentChannel'):
+    em = discord.Embed()
+    if channelID == 'currentChannel':
+        channelID = str(ctx.channel.id)
+        em.set_author(name=f'Results for config {configName}')
+    else:
+        em.set_author(name=f'Results for config {configName} for channel ID {channelID}')
+    # Sets all keys to lowercase, making search arguments case insensitive
+    try:
+        resultValue = dbQuery['Items'][0]['mpaConfig'][f'{channelID}']
+    except KeyError:
+        traceback.print_exc(file=sys.stdout)
+        em.add_field(name='Nothing found!', value='Nothing was found.')
+        await ctx.send('', embed=em)
+        return
+        # Probably not the best way to determine if a key is a role list or not
+    if 'role' in configName.lower():
+        updateDB = None
+        if len(ctx.message.role_mentions) > 0:
+            foundRole = ctx.message.role_mentions[0]
+            configValue = foundRole.id
+        else:
+            try:
+                foundRole = discord.utils.get(ctx.guild.roles, id=int(configValue))
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigRoleRemove', removeChannelConfig.__name__)
+                return
+        if str(configValue) in resultValue[f'{configName}']:
+            for index, item in enumerate(resultValue[f'{configName}']):
+                if str(configValue) == str(item):
+                    updateDB = tonkDB.removeRoleList(ctx.guild.id, channelID, configName, index, str(datetime.utcnow()))
+                    break
+        else:
+            await sendErrorMessage.invalidArguments(ctx, 'ItemDoesntExist', removeChannelConfig.__name__) 
+            return
+        if updateDB is not None:
+            em.add_field(name=f'Success:', value=f'removed {foundRole.mention} (ID: {configValue}) from {configName}', inline=False)
+        else:
+            await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigRoleRemove', removeChannelConfig.__name__)
+            return
+        await ctx.send('', embed=em)
+        return
+    else:
+        updateDB = tonkDB.removeConfig(ctx.guild.id, channelID, configName, str(datetime.utcnow()))
+        if updateDB is not None:
+            em.add_field(name=f'Success:', value=f'Removed {configName}', inline=False)
+        else:
+            await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigRemove', removeChannelConfig.__name__)
+            return
+        await ctx.send('', embed=em)
+        return
+
+async def removeServerConfig(ctx, dbQuery, configName, configValue):
+    em = discord.Embed()
+    em.set_author(name=f'Results')
+    # Sets all keys to lowercase, making search arguments case insensitive
+    try:
+        resultValue = dbQuery['Items'][0]['mpaConfig']['global']
+    except KeyError:
+        traceback.print_exc(file=sys.stdout)
+        em.add_field(name='Nothing found!', value='Nothing was found.')
+        await ctx.send('', embed=em)
+        return
+        # Probably not the best way to determine if a key is a role list or not
+    if 'role' in configName.lower():
+        if len(ctx.message.role_mentions) > 0:
+            foundRole = ctx.message.role_mentions[0]
+            configValue = foundRole.id
+        else:
+            try:
+                foundRole = discord.utils.get(ctx.guild.roles, id=int(configValue))
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleRemove', setServerConfig.__name__)
+                return
+        try:
+            if str(configValue) in resultValue[f'{configName}']:
+                for index, item in enumerate(resultValue[f'{configName}']):
+                    if str(configValue) == str(item):
+                        updateDB = tonkDB.removeRoleList(ctx.guild.id, 'global', configName, index, str(datetime.utcnow()))
+                        break
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'ItemDoesntExist', setServerConfig.__name__) 
+            if updateDB is not None:
+                em.add_field(name=f'Success:', value=f'removed {foundRole.mention} (ID: {configValue}) from {configName}', inline=False)
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRoleRemove', setChannelConfig.__name__)
+                return
+        except KeyError:
+            await sendErrorMessage.invalidArguments(ctx, 'ItemDoesntExist', setChannelConfig.__name__)
+            return
+        await ctx.send('', embed=em)
+        return
+    else:
+        updateDB = tonkDB.removeConfig(ctx.guild.id, 'global', configName, str(datetime.utcnow()))
+        if updateDB is not None:
+            em.add_field(name=f'Success:', value=f'Removed {configName}', inline=False)
+        else:
+            await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigRemove', removeChannelConfig.__name__)
+            return
+        await ctx.send('', embed=em)
+        return
+
+async def remvoeDefaultConfig(ctx, dbQuery, configName, configValue):
+    em = discord.Embed()
+    em.set_author(name=f'Results')
+    # Sets all keys to lowercase, making search arguments case insensitive
+    try:
+        resultValue = dbQuery['Items'][0]['mpaConfig']
+    except KeyError:
+        traceback.print_exc(file=sys.stdout)
+        em.add_field(name='Nothing found!', value='Nothing was found.')
+        await ctx.send('', embed=em)
+        return
+        # Probably not the best way to determine if a key is a role list or not
+    if 'role' in configName.lower():
+        if len(ctx.message.role_mentions) > 0:
+            foundRole = ctx.message.role_mentions[0]
+            configValue = foundRole.id
+        else:
+            try:
+                foundRole = discord.utils.get(ctx.guild.roles, id=int(configValue))
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigRoleRemove', setServerConfig.__name__)
+                return
+        try:
+            if str(configValue) in resultValue[f'{configName}']:
+                for index, item in enumerate(resultValue[f'{configName}']):
+                    if str(configValue) == str(item):
+                        updateDB = tonkDB.removeRoleList(ctx.guild.id, 'default', configName, index, str(datetime.utcnow()))
+                        break
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'ItemDoesntExist', setServerConfig.__name__) 
+            if updateDB is not None:
+                em.add_field(name=f'Success:', value=f'removed {foundRole.mention} (ID: {configValue}) from {configName}', inline=False)
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigRoleRemove', setChannelConfig.__name__)
+                return
+        except KeyError:
+            await sendErrorMessage.invalidArguments(ctx, 'ItemDoesntExist', setChannelConfig.__name__)
+            return
+        await ctx.send('', embed=em)
+        return
+    else:
+        updateDB = tonkDB.removeConfig(ctx.guild.id, 'default', configName, str(datetime.utcnow()))
+        if updateDB is not None:
+            em.add_field(name=f'Success:', value=f'Removed {configName}', inline=False)
+        else:
+            await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigRemove', removeChannelConfig.__name__)
             return
         await ctx.send('', embed=em)
         return
