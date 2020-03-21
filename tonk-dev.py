@@ -153,19 +153,19 @@ async def on_message(message):
         print (f'{message.author.name} ({message.author.id}) has called for the command {message.content}')
         # These commands are for Me (Tenj), or whoever runs this bot. 
         if message.content.lower() == '!!shutdown':
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 if message.guild.id == serverIDDict['Ishana']:
                     await message.channel.send('Shutting down. If anything goes wrong during the downtime, please blame yui.')
                 else:
                     await message.channel.send('DONT DO THIS TO ME MA-')
                     shutdownRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370340076527288321)
-                    await client.get_channel(OtherIDDict['ControlPanel']).send(f'Tonk is {shutdownRole.mention}')
+                    await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is {shutdownRole.mention}')
                 await client.logout()
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
         # Closes all MPAs the bot has ever known to be active at this moment. Easy to use before shutting the bot down.
         elif message.content.lower() == '!!burnbabyburn':
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 if len(ActiveMPA) > 0:
                     for index in range(len(ActiveMPA)):
                         await client.get_channel(ActiveMPA[index]).send('!removempa')
@@ -175,7 +175,7 @@ async def on_message(message):
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
         elif message.content.lower().startswith('!!leaveserver'):
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 userstr = message.content
                 userstr = userstr.replace("!!leaveserver", "")
                 userstr = userstr.replace(" ", "")
@@ -183,7 +183,7 @@ async def on_message(message):
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
         elif message.content.lower().startswith('!!findroleid'):
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 userstr = message.content
                 userstr = userstr.replace("!!findroleid", "")
                 userstr = userstr.replace(" ", "")
@@ -198,35 +198,35 @@ async def on_message(message):
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
         elif message.content.lower().startswith('!!announce'):
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 userstr = message.content
                 if message.content.startswith('!!announce'):
                     userstr = userstr.replace("!!announce", "")
                 else:
                     userstr = userstr.replace("!!announce", "")
-                if message.guild.id == OtherIDDict['EmojiStorage']:
+                if message.guild.id == ConfigDict['EMOJISTORAGEID']:
                     return
                 else:
                     for item in client.guilds:
-                        if item.id == serverIDDict['Bloop'] or item.id == OtherIDDict['EmojiStorage']:
+                        if item.id == ConfigDict['OWNERSERVERID'] or item.id == ConfigDict['EMOJISTORAGEID']:
                             pass
                         try:
                             await client.get_channel(item.default_channel.id).send(f'{userstr}')
-                            await client.get_channel(OtherIDDict['ControlPanel']).send('Sent announcement to ' + item.name)
+                            await client.get_channel(ConfigDict['ADMINCHANNELID']).send('Sent announcement to ' + item.name)
                         except AttributeError:
-                            await client.get_channel(OtherIDDict['ControlPanel']).send('Error trying to send announcement to ' + item.name)
+                            await client.get_channel(ConfigDict['ADMINCHANNELID']).send('Error trying to send announcement to ' + item.name)
                             pass
-                        await client.get_channel(OtherIDDict['ControlPanel']).send('All announcements sent.')
+                        await client.get_channel(ConfigDict['ADMINCHANNELID']).send('All announcements sent.')
                 # await client.send_message(client.get_channel('326883995641970689'), userstr)
             await message.delete()
         elif message.content.lower() == '!!lastrestart':
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 await message.channel.send(str(lastRestart))
             else:
                 await message.channel.send('Only Tenj may use this command.')
         elif message.content.lower() == '!!listservers':
             serverlist = ''
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 for item in client.guilds:
                     serverlist += (item.name + f'\n{item.id}' + '\n')
                 em = discord.Embed(description=serverlist, colour=0x0099FF)
@@ -235,18 +235,18 @@ async def on_message(message):
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.') 
         elif message.content.lower() == '!!restart':
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 await message.channel.send('Tonk will now restart!')
                 print ('The restart command was issued! Restarting Bot...')
                 end = time.time()
                 runTime = (end - start)
                 restartRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370339592055947266)
-                await client.get_channel(OtherIDDict['ControlPanel']).send(f'Tonk is {restartRole.mention}' + '\nRun time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(runTime)))
+                await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is {restartRole.mention}' + '\nRun time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(runTime)))
                 os.execl(sys.executable, *([sys.executable]+sys.argv))
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
         elif message.content.lower() == '!!clearconsole':
-            if message.author.id == OtherIDDict['Tenj']:
+            if message.author.id == ConfigDict['OWNERID']:
                 await message.channel.send('Clearing Console')
                 os.system('cls' if os.name == 'nt' else 'clear')
             else:
@@ -307,7 +307,7 @@ async def cmd_ffs(ctx):
         await sendErrorMessage.mpaChannelNotEnabled(ctx, f"cmd_{cmd_ffs.name}")
         return
     # if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-    #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == OtherIDDict['Tenj']:
+    #     if ctx.author.top_role.permissions.manage_emojis or ctx.author.id == ConfigDict['OWNERID']:
     #         await ctx.channel.purge(limit=100, after=getTime, check=is_not_bot)
     #     else:
     #         await ctx.channel.send('You lack the permissions to use this command.')
@@ -495,7 +495,7 @@ async def cmd_config(ctx, *args):
 # Debugging command
 # @client.command(name='eval')
 # async def cmd_eval(ctx, *code):
-#     if ctx.author.id == OtherIDDict['Tenj']:
+#     if ctx.author.id == ConfigDict['OWNERID']:
 #         try:
 #             result = eval(code)
 #         except Exception:
@@ -570,7 +570,7 @@ async def cmd_closempa(ctx):
 @client.command(name='schedulempa')
 async def cmd_schedulempa(ctx, requestedTime, message: str = '', mpaType: str = 'default'):
     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
-        if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator or ctx.author.id == OtherIDDict['Tenj']:
+        if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator or ctx.author.id == ConfigDict['OWNERID']:
             scheduledTime = 0
             timesplit = re.findall(r'[A-Za-z]+|\d+', requestedTime)
             message = f'"{message}"'
@@ -656,7 +656,7 @@ async def on_ready():
 # Behavior every time this bot joins another server. Tries to send a message to the general channel as well as logging the join event to the control panel server.
 @client.event
 async def on_server_join(server):
-    await client.get_channel(OtherIDDict['ControlPanel']).send(f'```diff\n+ Joined {server.name} ```' + f'(ID: {str(server.id)})')
+    await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'```diff\n+ Joined {server.name} ```' + f'(ID: {str(server.id)})')
     general = find(lambda x: x.name == 'general',  server.channels)
     if general and general.permissions_for(server.me).send_messages:
         await general.send('**Greetings!**\nI am Tonk, a MPA organization bot for PSO2! Please type **!gettingstarted** to set my functions up!')
@@ -664,7 +664,7 @@ async def on_server_join(server):
 # Logs the leave event on the control panel server.
 @client.event
 async def on_server_remove(server):
-    await client.get_channel(OtherIDDict['ControlPanel']).send(f'```diff\n- Left {server.name} ```'.format(server.name) + f'(ID: {str(server.id)})')
+    await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'```diff\n- Left {server.name} ```'.format(server.name) + f'(ID: {str(server.id)})')
     
 
 @client.event
@@ -673,7 +673,7 @@ async def on_resumed():
     print ('Tonk has resumed from a disconnect.')
     for item in client.guilds:
         connectedServers += 1
-    resumeRole = discord.utils.get(client.get_guild(serverIDDict['Bloop']).roles, id=405620919541694464)
-    await client.get_channel(OtherIDDict['ControlPanel']).send(f'Tonk has {resumeRole.mention}' + '\nConnected to **' + str(connectedServers) + '** servers')
+    resumeRole = discord.utils.get(client.get_guild(ConfigDict['OWNERSERVERID']).roles, id=ConfigDict['RESUMEROLEID'])
+    await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk has {resumeRole.mention}' + '\nConnected to **' + str(connectedServers) + '** servers')
 # WOOHOO    
 client.run(APIKey)

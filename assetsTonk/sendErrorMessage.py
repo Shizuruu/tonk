@@ -2,6 +2,7 @@ import asyncio
 import sys
 import re
 import json
+import discord
 
 helpFile = open('assetsTonk/helpTexts/configUsage.json')
 helpDict = json.loads(helpFile.read())
@@ -32,13 +33,13 @@ async def invalidArguments(ctx, invalidType, commandName, commandArgs):
         changeType = 'set'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
-            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
-            em.add_field(name='Example', value=f"`{helpDict[f'{commandArgs}']['example']}`", inline=False)
+            em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
+            em.add_field(name='Example', value=f"```{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['example']}```", inline=False)
     elif invalidType == 'invalidChannelConfigRoleRemove':
         changeType = 'remove'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
-            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+            em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
     elif invalidType == 'invalidChannelConfigRemove':
         changeType = 'remove'
         if commandArgs in helpDict.keys():
@@ -47,13 +48,13 @@ async def invalidArguments(ctx, invalidType, commandName, commandArgs):
         changeType = 'set server'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
-            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
-            em.add_field(name='Example', value=f"`{helpDict[f'{commandArgs}']['example']}`", inline=False)
+            em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
+            em.add_field(name='Example', value=f"```{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['example']}```", inline=False)
     elif invalidType == 'invalidServerConfigRoleRemove':
         changeType = 'remove server'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
-            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+            em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
     elif invalidType == 'invalidServerConfigRemove':
         changeType = 'remove server'
         if commandArgs in helpDict.keys():
@@ -62,17 +63,21 @@ async def invalidArguments(ctx, invalidType, commandName, commandArgs):
         changeType = 'set default'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
-            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
-            em.add_field(name='Example', value=f"`{helpDict[f'{commandArgs}']['example']}`", inline=False)
+            em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
+            em.add_field(name='Example', value=f"```{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['example']}```", inline=False)
     elif invalidType == 'invalidDefaultConfigRoleRemove':
         changeType = 'remove default'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
-            em.add_field(name='Where', value=f"`{helpDict[f'{commandArgs}']['where']}`", inline=False)
+            em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
     elif invalidType == 'invalidDefaultConfigRemove':
         changeType = 'remove default'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
+    elif invalidType == 'ItemDoesntExist':
+        em.add_field(name='Item does not exist', value='The item you specified was not found in the config.', inline=False)
+    elif invalidType == 'ItemAlreadyExists':
+        em.add_field(name='Item already exists', value='This item is already set to what you are trying to set it to.', inline=False)
     else:
         em.add_field(name='No help found', value="No Usage doc available for this flag.", inline=False)
     await ctx.send('', embed=em)
