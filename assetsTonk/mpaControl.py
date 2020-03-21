@@ -19,8 +19,8 @@ def is_pinned(m):
 
 
 # Converts EQ List Placeholder objects to strings and then updates the DB with the new batch of information.
-async def convertAndUpdateMPADBTable(ctx, listMessage, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate):
-    tonkDB.updateMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQList, SubList, privateMpa, participantCount, maxParticipants, str(expirationDate), str(datetime.utcnow()))
+async def convertAndUpdateMPADBTable(ctx, listMessage, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate, startDate):
+    tonkDB.updateMPATable(ctx.guild.id, ctx.channel.id, listMessage.id, EQList, SubList, privateMpa, participantCount, maxParticipants, str(expirationDate), str(datetime.utcnow()), startDate)
     return
 
 # Same as above but this appends the MPA Start date onto the DB, which is used for message cleanup commands.
@@ -52,6 +52,7 @@ async def loadMpaVariables(ctx):
         varDict['maxParticipant'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
         varDict['privateMpa'] = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
         varDict['classIcons'] = parseDB.getClassIcons(defaultConfigQuery)
+        varDict['startDate'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['startDate']
         # Load configuration flags for the MPA
         varDict['mpaExpirationTime'] = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
         return varDict
@@ -81,67 +82,67 @@ async def startmpa(ctx, broadcast, mpaType):
         print (e)
         await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
         return
-    if (str(ctx.channel.id)) in (mpaChannelList):
-        try:
-            mpaBanner.getAlias(mpaType.lower())
-            mpaFile = mpaBanner.getMpaBanner(mpaType.lower())
-            if mpaFile is not None:
-                await ctx.send(file=discord.File(mpaFile))
-            else:
-                await sendErrorMessage.mpaTypeNotFound(ctx, mpaType, startmpa.__name__)
-        except FileNotFoundError as e:
-            await sendErrorMessage.mpaTypeNotFound(ctx, mpaType, startmpa.__name__)
-        # Dont call return here since banners are not required for an mpa to function.
-        if mpaType.lower() in specialMPATypes.keys():
-            maxParticipant = specialMPATypes[f'{mpaType}']
-        else:
-            maxParticipant = 12
-        if not activeMPAList[f'{str(ctx.channel.id)}']:
-            try:
-                if broadcast == '':
-                    pass
-                else:
-                    await ctx.channel.send(f' {broadcast}')
-                participantCount = 0
-                EQTest = []
-                SubDict = []
-                listMessage = await ctx.channel.send('Please wait... Building list')
-                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaExpirationTime))
-                for indexEQTest in range(maxParticipant):
-                    EQTest.append(f"PlaceHolder{ctx.channel.id}{listMessage.id}")
-                startDate = datetime.utcnow()
-                await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
-                # Update the DB with the MPA data
-                await convertAndStartMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate, startDate)
-                if mpaExpirationEnabled .lower() == 'true':
-                    addToExpirationDict = {
-                        'expirationDate': expirationDate,
-                        'listMessageID': str(listMessage.id)
-                    }
-                    return addToExpirationDict
-                else:
-                    return
-            except discord.Forbidden:
-                print (ctx.author.name + f'Tried to start an MPA at {ctx.guild.name}, but failed.')
-                await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
-                return
-        else:
-            for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
-                listMessageID = int(key)
-                break
-                # Future code to support multiple MPAs in one channel
-                #if (mpaID - 1) == index:
-                #    break
-            # Because we don't want to accidentally override any list variables if there is already an existing MPA, we take the current data that already exists and pass it into generateList
-            participantCount = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount']
-            EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
-            SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
-            listMessage = await ctx.fetch_message(listMessageID)
-            maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-            privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
-            await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```fix\nThere is already an MPA being made here!```')
+    # Dont call return here since banners are not required for an mpa to function.
+    if mpaType.lower() in specialMPATypes.keys():
+        maxParticipant = specialMPATypes[f'{mpaType}']
     else:
-        await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
+        maxParticipant = 12
+    if not activeMPAList[f'{str(ctx.channel.id)}']:
+        if (str(ctx.channel.id)) in (mpaChannelList):
+            try:
+                mpaBanner.getAlias(mpaType.lower())
+                mpaFile = mpaBanner.getMpaBanner(mpaType.lower())
+                if mpaFile is not None:
+                    await ctx.send(file=discord.File(mpaFile))
+                else:
+                    await sendErrorMessage.mpaTypeNotFound(ctx, mpaType, startmpa.__name__)
+            except FileNotFoundError as e:
+                await sendErrorMessage.mpaTypeNotFound(ctx, mpaType, startmpa.__name__)
+        try:
+            if broadcast == '':
+                pass
+            else:
+                await ctx.channel.send(f' {broadcast}')
+            participantCount = 0
+            EQTest = []
+            SubDict = []
+            listMessage = await ctx.channel.send('Please wait... Building list')
+            expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaExpirationTime))
+            for indexEQTest in range(maxParticipant):
+                EQTest.append(f"PlaceHolder{ctx.channel.id}{listMessage.id}")
+            startDate = datetime.utcnow()
+            await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
+            # Update the DB with the MPA data
+            await convertAndStartMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate, startDate)
+            if mpaExpirationEnabled.lower() == 'true':
+                addToExpirationDict = {
+                    'expirationDate': expirationDate,
+                    'listMessageID': str(listMessage.id)
+                }
+                return addToExpirationDict
+            else:
+                return
+        except discord.Forbidden:
+            print (ctx.author.name + f'Tried to start an MPA at {ctx.guild.name}, but failed.')
+            await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
+            return
+    else:
+        for index, key in enumerate(dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}']):
+            listMessageID = int(key)
+            break
+            # Future code to support multiple MPAs in one channel
+            #if (mpaID - 1) == index:
+            #    break
+        # Because we don't want to accidentally override any list variables if there is already an existing MPA, we take the current data that already exists and pass it into generateList
+        participantCount = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['participantCount']
+        EQTest = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['EQTest']
+        SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
+        listMessage = await ctx.fetch_message(listMessageID)
+        maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
+        privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
+        await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```fix\nThere is already an MPA being made here!```')
+    # else:
+    #     await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
 
 
 #This function actually performs the removempa command. This is a separate function so that the bot can remove mpas as well.
@@ -187,7 +188,7 @@ async def addme(ctx, mpaArg: str = 'none'):
         heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
         subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defaultConfigQuery'])
         allowedMpaRoles = []
-        if bool(mpaDBDict['privateMpa']):
+        if mpaDBDict['privateMpa'] == 'true':
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
@@ -197,12 +198,12 @@ async def addme(ctx, mpaArg: str = 'none'):
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         for index in range(len(ctx.author.roles)):
-            if bool(mpaDBDict['privateMpa']):
+            if mpaDBDict['privateMpa'] == 'true':
                 if str(ctx.channel.id) in allowedMpaRoles:
                     allowJoinMpa = True
             else:
                 allowJoinMpa = True
-        if (allowJoinMpa == False and bool(mpaDBDict['privateMpa'])):
+        if (allowJoinMpa == False and mpaDBDict['privateMpa'] == 'true'):
             await ctx.send('You are not whitelisted to join this MPA.')
             await ctx.message.delete()
             return
@@ -258,7 +259,7 @@ async def addme(ctx, mpaArg: str = 'none'):
                     else:
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], "```fix\nYou are already in the MPA```")
                         await ctx.message.delete()
-                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                     return
                 await ctx.message.delete()
                 for index, word in enumerate(mpaDBDict['EQTest']):
@@ -297,7 +298,7 @@ async def addme(ctx, mpaArg: str = 'none'):
                     else:
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], "```css\nYou are already in the MPA```")
                 # End of main function, Update DB here
-                await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                 appended = False
                 return
             else:
@@ -314,7 +315,7 @@ async def addUser(ctx, user, mpaArg):
         heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
         subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defualtConfigQuery'])
         allowedMpaRoles = []
-        if bool(mpaDBDict['privateMpa']):
+        if mpaDBDict['privateMpa'] == 'true':
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])
     else:
         if mpaDBDict is KeyError:
@@ -368,7 +369,7 @@ async def addUser(ctx, user, mpaArg):
                     else:
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], "```fix\nThat user is already in the MPA```")
                     # End of the function, update DB here.
-                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                     return
                 for index, word in enumerate(mpaDBDict['EQTest']):
                     if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
@@ -385,7 +386,7 @@ async def addUser(ctx, user, mpaArg):
                 mpaDBDict['SubDict'].append(user)
                 await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n+ Added {user} to the Reserve list```')
             # End of main function, update DB here.
-            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
             appended = False
         else:
             await ctx.send('There is no MPA.')
@@ -426,7 +427,7 @@ async def removeme(ctx):
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {ctx.author.name} from the MPA list and added {mpaDBDict["EQTest"][index]}```')
                     inMPA = True
                     # End of function with a change made to list, update DB
-                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                     return
             if inMPA == False:
                 # Check the reserve list to see if the user is in this list, and if so remove the user from that list, update DB
@@ -435,7 +436,7 @@ async def removeme(ctx):
                         mpaDBDict['SubDict'].pop(index)
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {ctx.author.name} from the Reserve list```')
                         # End of function with a change made to list, update DB
-                        await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                        await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                         return
                 # These cases deal with the user not being in any list at all, and nothing needs to be done in this event.
                     else:
@@ -482,7 +483,7 @@ async def removeUser(ctx, user):
                                 await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {toBeRemoved} from the MPA list and added {toBeNamed2}```')
                             appended = True
                             # Write was made, updating the DB
-                            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                             return
                     if not appended:
                         for index in range(len(mpaDBDict['SubDict'])):
@@ -495,7 +496,7 @@ async def removeUser(ctx, user):
                                 await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n- Removed {toBeRemoved} from the Reserve list```')
                                 appended = True
                                 # Write was made, updating DB
-                                await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                                await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                                 return
                     if not appended:    
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f"```fix\nPlayer {user} does not exist in the MPA list```")
@@ -519,15 +520,15 @@ async def openmpa(ctx):
             await sendErrorMessage.mpaChannelNotEnabled(ctx, openmpa.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
-        if mpaDBDict['guestEnabled'] == True:
+        if not mpaDBDict['privateMpa'] == 'true':
             await ctx.send('This MPA is already open!')
             return
         else:
-            mpaDBDict['guestEnabled'] = True
+            mpaDBDict['privateMpa'] = 'false'
             await ctx.send('Opened MPA to non-members!')
             expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nMPA is now open to non-members.```')
-            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
             return
 
 # Closes the MPA to only approved roles.
@@ -542,15 +543,15 @@ async def closempa(ctx):
             await sendErrorMessage.mpaChannelNotEnabled(ctx, closempa.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
-        if mpaDBDict['guestEnabled'] == False:
+        if mpaDBDict['privateMpa'] == 'true':
             await ctx.send('This MPA is already closed!')
             return
         else:
-            mpaDBDict['guestEnabled'] = False
+            mpaDBDict['privateMpa'] = 'true'
             await ctx.send('Closed MPA to Members only.')
             expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nMPA is now closed to non-members```')
-            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+            await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
             return
 
 # Changes the class of the caller to another one they specify. Or none if they call for none of the classes.
@@ -609,7 +610,7 @@ async def changeClass(ctx, mpaArg):
                     mpaDBDict['EQTest'].insert(index, newRole + '|' + ctx.author.name)
                     await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], f'```diff\n+ Changed {ctx.author.name}\'s class to ' + newRoleName + '```')
                     inMPA = True
-                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
+                    await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate, mpaDBDict['startDate'])
                     return
             if inMPA == False:
                 await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nYou are not in the MPA!```')
@@ -667,7 +668,7 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
             playerlist += (f"{str(sCount)}. {word}\n")
             sCount += 1 
 
-    if privateMpa.lower() == 'true':
+    if privateMpa.lower() == 'false':
         mpaFriendly = 'Yes'
     else:
         mpaFriendly = 'No'

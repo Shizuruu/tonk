@@ -138,7 +138,8 @@ def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
 #     )
 #     return
 
-def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, maxParticipants, expirationDate, startDate):
+def startMPATable(guildID, channelID, messageID, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate, startDate):
+    print (startDate)
     dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
@@ -152,7 +153,7 @@ def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, 
             ':eqDict': {
                 'EQTest': EQList,
                 'SubList': SubList,
-                'guestEnabled': f"{str(guestEnabled)}",
+                'privateMpa': f"{str(privateMpa)}",
                 'maxParticipants': f"{str(maxParticipants)}",
                 'participantCount': f"{str(participantCount)}",
                 'expirationDate': f"{expirationDate}",
@@ -162,7 +163,7 @@ def startMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, 
         }
     )
 
-def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled, participantCount, maxParticipants, expirationDate, timeStamp):
+def updateMPATable(guildID, channelID, messageID, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate, timeStamp, startDate):
     dbTable.update_item(
         Key={
             'guildID': f"{guildID}"
@@ -176,10 +177,11 @@ def updateMPATable(guildID, channelID, messageID, EQList, SubList, guestEnabled,
             ':eqDict': {
                 'EQTest': EQList,
                 'SubList': SubList,
-                'guestEnabled': f"{str(guestEnabled)}",
+                'privateMpa': f"{str(privateMpa)}",
                 'maxParticipants': f"{str(maxParticipants)}",
                 'participantCount': f"{str(participantCount)}",
-                'expirationDate': f"{expirationDate}"
+                'expirationDate': f"{expirationDate}",
+                 'startDate': f"{startDate}"
             },
             ':timestamp': f"{timeStamp}"
         }
@@ -191,10 +193,10 @@ def removeMPATable(guildID, channelID, messageID, timeStamp):
         Key={
             'guildID': f"{guildID}"
         },
-        UpdateExpression=f"REMOVE activeMPAs.#channelID.#messageID SET lastUpdated = :timestamp",
+        UpdateExpression=f"REMOVE activeMPAs.#channelID SET lastUpdated = :timestamp",
         ExpressionAttributeNames={
-            '#channelID': f"{channelID}",
-            '#messageID': f"{messageID}"
+            '#channelID': f"{channelID}"
+           #'#messageID': f"{messageID}"
         },
         ExpressionAttributeValues={
             ':timestamp': f"{timeStamp}"

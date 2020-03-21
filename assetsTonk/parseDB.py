@@ -8,13 +8,13 @@ def getPrivateMpa(channelID: str, dbQuery, defaultDBQuery):
 
 def getActiveServerSlotID(channelID: str, dbQuery, defaultDBQuery):
     try:
-        return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['privateMpa']
+        return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['activeServerSlot']
     except KeyError:
         return defaultDBQuery['Items'][0]['mpaConfig']['activeServerSlot']
 
 def getInactiveServerSlotID(channelID: str, dbQuery, defaultDBQuery):
     try:
-        return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['privateMpa']
+        return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['inactiveServerSlot']
     except KeyError:
         return defaultDBQuery['Items'][0]['mpaConfig']['inactiveServerSlot']
 

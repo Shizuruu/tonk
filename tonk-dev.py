@@ -85,7 +85,6 @@ def loadMpaExpirations():
         except Exception:
             traceback.print_exc(file=sys.stdout)
             return None
-    print (expirationDate)
     return True
 
 async def isManager(ctx):
@@ -270,6 +269,7 @@ async def on_message(message):
                 os.system('cls' if os.name == 'nt' else 'clear')
             else:
                 await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        await client.process_commands(message)
 
 
 # Gets the highesr role for the user calling this command
@@ -335,7 +335,6 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
                 'channelID': str(ctx.channel.id),
                 'expirationDate': startmpaResult['expirationDate']
             }
-            print (expirationDate)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_startmpa.name}")
     else:
@@ -348,7 +347,6 @@ async def cmd_removempa(ctx):
         removeMpaID = await mpaControl.removempa(ctx, client)
         if removeMpaID is not None:
             del expirationDate[removeMpaID]
-            print (expirationDate)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_removempa.name}")
     else:
