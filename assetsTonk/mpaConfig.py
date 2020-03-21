@@ -431,28 +431,53 @@ async def setChannelConfig(ctx, dbQuery, configName, configValue, channelID: str
             except ValueError:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
                 return
-        if str(configValue) in resultValue[f'{configName}']:
-            await sendErrorMessage.invalidArguments(ctx, 'ItemAlreadyExists', setChannelConfig.__name__, configName) 
-            return
-        else:
-            updateDB = tonkDB.updateRoleList(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
-        if updateDB is not None:
-            em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to {configName}', inline=False)
-        else:
-            await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
-            return
+        try:
+            if str(configValue) in resultValue[f'{configName}']:
+                await sendErrorMessage.invalidArguments(ctx, 'ItemAlreadyExists', setChannelConfig.__name__, configName) 
+                return
+            else:
+                updateDB = tonkDB.updateRoleList(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
+            if updateDB is not None:
+                em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to {configName}', inline=False)
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
+                return
+        except KeyError:
+            keyExists = "false"
+            updateDB = tonkDB.updateRoleList(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()), keyExists)
+            if updateDB is not None:
+                em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to the server flag {configName}', inline=False)
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
+                return
         await ctx.send('', embed=em)
         return
     else:
-        if (checkConfigSyntax(ctx, configName, configValue)) is not None:
-            updateDB = tonkDB.updateConfig(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
-        else:
-            updateDB = None
-        if updateDB is not None:
-            em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
-        else:
-            await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
-            return
+        try:
+            if str(configValue) in resultValue[f'{configName}']:
+                await sendErrorMessage.invalidArguments(ctx, 'ItemAlreadyExists', setServerConfig.__name__, configName) 
+                return
+            else:
+                if (checkConfigSyntax(ctx, configName, configValue)) is not None:
+                    updateDB = tonkDB.updateConfig(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()))
+                else:
+                    updateDB = None
+            if updateDB is not None:
+                em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
+                return
+        except KeyError:
+            if (checkConfigSyntax(ctx, configName, configValue)) is not None:
+                keyExists = "false"
+                updateDB = tonkDB.updateConfig(ctx.guild.id, channelID, configName, configValue, str(datetime.utcnow()), keyExists)
+            else:
+                updateDB = None
+            if updateDB is not None:
+                em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
+            else:
+                await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
+                return
         await ctx.send('', embed=em)
         return
 
@@ -475,7 +500,7 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
             try:
                 foundRole = discord.utils.get(ctx.guild.roles, id=int(configValue))
                 if foundRole is None:
-                    await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__, configName)
+                    await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__, configName)
                     return
             except ValueError:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__, configName)
@@ -489,14 +514,15 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
             if updateDB is not None:
                 em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to the server flag {configName}', inline=False)
             else:
-                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__, configName)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__, configName)
                 return
         except KeyError:
-            updateDB = tonkDB.updateRoleList(ctx.guild.id, 'globalKeyNotExists', configName, configValue, str(datetime.utcnow()))
+            keyExists = 'false'
+            updateDB = tonkDB.updateRoleList(ctx.guild.id, 'global', configName, configValue, str(datetime.utcnow()), keyExists)
             if updateDB is not None:
                 em.add_field(name=f'Success:', value=f'added {foundRole.mention} (ID: {configValue}) to the server flag {configName}', inline=False)
             else:
-                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__, configName)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__, configName)
                 return
         await ctx.send('', embed=em)
         return
@@ -513,17 +539,18 @@ async def setServerConfig(ctx, dbQuery, configName, configValue):
             if updateDB is not None:
                 em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
             else:
-                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__, configName)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__, configName)
                 return
         except KeyError:
             if (checkConfigSyntax(ctx, configName, configValue)) is not None:
-                updateDB = tonkDB.updateConfig(ctx.guild.id, 'globalKeyNotExists', configName, configValue, str(datetime.utcnow()))
+                keyExists = 'false'
+                updateDB = tonkDB.updateConfig(ctx.guild.id, 'global', configName, configValue, str(datetime.utcnow()), keyExists)
             else:
                 updateDB = None
             if updateDB is not None:
                 em.add_field(name=f'Success', value=f'Set {configName} to {configValue}', inline=False)
             else:
-                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setChannelConfig.__name__, configName)
+                await sendErrorMessage.invalidArguments(ctx, 'invalidServerConfigSet', setServerConfig.__name__, configName)
                 return
         await ctx.send('', embed=em)
         return
@@ -547,7 +574,7 @@ async def setDefaultConfig(ctx, dbQuery, configName, configValue):
             try:
                 foundRole = discord.utils.get(ctx.guild.roles, id=int(configValue))
                 if foundRole is None:
-                    await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setChannelConfig.__name__, configName)
+                    await sendErrorMessage.invalidArguments(ctx, 'invalidChannelConfigSet', setDefaultConfig.__name__, configName)
                     return
             except ValueError:
                 await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigRoleSet', setDefaultConfig.__name__, configName)

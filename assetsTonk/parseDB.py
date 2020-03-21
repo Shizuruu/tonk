@@ -53,7 +53,8 @@ def getMpaBlock(channelID: str, dbQuery, defaultDBQuery):
     
 def getAllowedMpaRoles(channelID: str, dbQuery, defaultDBQuery):
     try:
-        return dbQuery['Items'][0]['mpaConfig'][f'{channelID}']['mpaAllowedRoles']
+        print ('Return')
+        return dbQuery['Items'][0]['mpaConfig'][f'{str(channelID)}']['mpaAllowedRoles']
     except KeyError:
         return defaultDBQuery['Items'][0]['mpaConfig']['mpaBlock']
 

@@ -42,9 +42,9 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
             'guildID': f"{guildID}",
             'mpaChannels': [f"{newChannelID}"],
             'lastUpdated': f"{timeStamp}",
-            'mpaConfig': {f"{newChannelID}": {
-                'global': {}
-            }
+            'mpaConfig': {
+                "global": {},
+                f"{newChannelID}": {}
             },
             'activeMPAs': {f"{newChannelID}": {}}
         }
@@ -181,7 +181,7 @@ def updateMPATable(guildID, channelID, messageID, EQList, SubList, privateMpa, p
                 'maxParticipants': f"{str(maxParticipants)}",
                 'participantCount': f"{str(participantCount)}",
                 'expirationDate': f"{expirationDate}",
-                 'startDate': f"{startDate}"
+                'startDate': f"{startDate}"
             },
             ':timestamp': f"{timeStamp}"
         }
@@ -193,21 +193,18 @@ def removeMPATable(guildID, channelID, messageID, timeStamp):
         Key={
             'guildID': f"{guildID}"
         },
-        UpdateExpression=f"REMOVE activeMPAs.#channelID SET lastUpdated = :timestamp",
+        UpdateExpression=f"REMOVE activeMPAs.#channelID.#messageID SET lastUpdated = :timestamp",
         ExpressionAttributeNames={
-            '#channelID': f"{channelID}"
-           #'#messageID': f"{messageID}"
+            '#channelID': f"{channelID}",
+            '#messageID': f"{messageID}"
         },
         ExpressionAttributeValues={
             ':timestamp': f"{timeStamp}"
         }
     )
 
-def updateRoleList(guildID, channelID, configName, roleID, timeStamp):
-    # Theres this really weird bug where if the list item does not exist in the DB, this statement does not create the key and appends the list.
-    # Needs investigation.
-    if channelID == 'globalKeyNotExists':
-        channelID = 'global'
+def updateRoleList(guildID, channelID, configName, roleID, timeStamp, keyExists: str = 'true'):
+    if keyExists == 'false':
         return dbTable.update_item(
             Key={
                 'guildID': f"{guildID}"
@@ -257,7 +254,7 @@ def updateRoleList(guildID, channelID, configName, roleID, timeStamp):
         )
     return None
 
-def updateConfig(guildID, channelID, configName, configValue, timeStamp):
+def updateConfig(guildID, channelID, configName, configValue, timeStamp, keyExists: str = 'true'):
     if channelID != '':
         return dbTable.update_item(
             Key={

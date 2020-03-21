@@ -50,7 +50,8 @@ async def loadMpaVariables(ctx):
         varDict['SubDict'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
         varDict['listMessage'] = await ctx.fetch_message(listMessageID)
         varDict['maxParticipant'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-        varDict['privateMpa'] = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
+       # varDict['privateMpa'] = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
+        varDict['privateMpa'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['privateMpa']
         varDict['classIcons'] = parseDB.getClassIcons(defaultConfigQuery)
         varDict['startDate'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['startDate']
         # Load configuration flags for the MPA
@@ -199,7 +200,7 @@ async def addme(ctx, mpaArg: str = 'none'):
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         for index in range(len(ctx.author.roles)):
             if mpaDBDict['privateMpa'] == 'true':
-                if str(ctx.channel.id) in allowedMpaRoles:
+                if str(ctx.author.roles[index].id) in allowedMpaRoles:
                     allowJoinMpa = True
             else:
                 allowJoinMpa = True
