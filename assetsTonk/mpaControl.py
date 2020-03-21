@@ -10,7 +10,6 @@ from dateutil.parser import parse
 
 from assetsTonk import tonkDB
 from assetsTonk import parseDB
-from assetsTonk import MpaMatchDev
 from assetsTonk import classMatchDev as classMatch
 from assetsTonk import sendErrorMessage
 from assetsTonk import mpaBanner

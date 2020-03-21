@@ -15,8 +15,6 @@ import time
 from datetime import datetime
 from discord.utils import find
 from discord.ext import commands
-# from assetsTonk import MpaMatchDev
-# from assetsTonk import classMatch
 from assetsTonk import tonkHelper
 from assetsTonk import tonkDB
 from assetsTonk import utils
@@ -75,6 +73,7 @@ def loadMpaExpirations():
                     if len(mpaDict['Items'][index]['activeMPAs'][channelID]) > 0:
                         for messageID in mpaDict['Items'][index]['activeMPAs'][channelID]:
                             expirationDate[messageID] = {}
+                            expirationDate[messageID]['channelID'] = channelID
                             expirationDate[messageID]['expirationDate'] = mpaDict['Items'][index]['activeMPAs'][channelID][messageID]['expirationDate']
                             #expirationDate[messageID]['expirationEnabled'] = mpaDict['Items'][index]['mpaConfig'][channelID]['mpaExpirationEnabled']
                     else:
@@ -124,13 +123,13 @@ async def isManager(ctx):
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
 async def expiration_checker():
     await client.wait_until_ready()
-    for messageID in expirationDate:
+    for messageID in list(expirationDate):
         nowTime = int(time.mktime(datetime.now().timetuple()))
-        if (int(expirationDate[messageID]['expirationDate']) - 60) == nowTime:
-            await client.fetch_message(int(messageID)).channel.send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `60` seconds if no actions are taken!** :warning:")
+        if (int(expirationDate[messageID]['expirationDate']) - 15) == nowTime:
+            await client.get_channel(int(expirationDate[messageID]['channelID'])).send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `15` seconds if no actions are taken!** :warning:")
         if expirationDate[messageID]['expirationDate'] == nowTime:
             print ("Expiration reached")
-            context = await client.get_context(client.fetch_message(int(messageID)))
+            context = await client.get_context(await client.get_channel(int(expirationDate[messageID]['channelID'])).fetch_message(id=int(messageID)))
             removeMpaID = await mpaControl.removempa(context, client)
             del expirationDate[removeMpaID]
 
@@ -360,6 +359,7 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
         startmpaResult = await mpaControl.startmpa(ctx, message, mpaType)
         if startmpaResult is not None:
             expirationDate[startmpaResult['listMessageID']] = {
+                'channelID': str(ctx.channel.id),
                 'expirationDate': startmpaResult['expirationDate']
             }
             print (expirationDate)
