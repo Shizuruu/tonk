@@ -1,9 +1,5 @@
-assetsTonk/TonkConfig.json
-assetsTonk/TonkDevConfig.json
-assetsTonk/TonkTestConfig.json
-assetsTonk/Tonk*Config.json
+assetsTonk/archivedParts/
 assetsTonk/__pycache__/
-assetsTonk/mpaAutoExpiration.json
 *.png
 *.jpg
 *.bak

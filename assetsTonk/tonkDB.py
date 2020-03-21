@@ -14,6 +14,9 @@ def gidQueryDB(guildID):
 def configDefaultQueryDB():
     return dbTable.query(KeyConditionExpression=Key('guildID').eq('defaults'))
 
+def queryExpirationKeys():
+    return dbTable.scan(ProjectionExpression='activeMPAs, mpaConfig')
+
 def updateMpaChannels(guildID, newChannelID, timeStamp):
     dbTable.update_item(
         Key={

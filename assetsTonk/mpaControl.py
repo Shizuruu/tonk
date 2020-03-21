@@ -13,6 +13,7 @@ from assetsTonk import parseDB
 from assetsTonk import MpaMatchDev
 from assetsTonk import classMatchDev as classMatch
 from assetsTonk import sendErrorMessage
+from assetsTonk import mpaBanner
 
 def is_pinned(m):
    return m.pinned != True
@@ -53,7 +54,6 @@ async def loadMpaVariables(ctx):
         varDict['privateMpa'] = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
         varDict['classIcons'] = parseDB.getClassIcons(defaultConfigQuery)
         # Load configuration flags for the MPA
-        varDict['mpaExpirationEnabled'] = parseDB.getMpaExpirationEnabled(ctx.channel.id, dbQuery, defaultConfigQuery)
         varDict['mpaExpirationTime'] = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
         return varDict
     except KeyError as e:
@@ -83,18 +83,17 @@ async def startmpa(ctx, broadcast, mpaType):
         await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
         return
     if (str(ctx.channel.id)) in (mpaChannelList):
-        mpaMap = MpaMatchDev.get_class(mpaType)
         try:
-            if mpaMap == 'default':
-                pass
+            mpaBanner.getAlias(mpaType.lower())
+            mpaFile = mpaBanner.getMpaBanner(mpaType.lower())
+            if mpaFile is not None:
+                await ctx.send(file=discord.File(mpaFile))
             else:
-                # CHANGE: Convert to upload from AWS S3
-                await ctx.channel.send(file=discord.File(mpaMap))
+                await sendErrorMessage.mpaTypeNotFound(ctx, mpaType, startmpa.__name__)
         except FileNotFoundError as e:
-            await ctx.channel.send('Unable to find a file with that name! Please check your spelling.')    
-            return
-        #listMessage = None
-        if mpaType in specialMPATypes.keys():
+            await sendErrorMessage.mpaTypeNotFound(ctx, mpaType, startmpa.__name__)
+        # Dont call return here since banners are not required for an mpa to function.
+        if mpaType.lower() in specialMPATypes.keys():
             maxParticipant = specialMPATypes[f'{mpaType}']
         else:
             maxParticipant = 12
@@ -108,17 +107,21 @@ async def startmpa(ctx, broadcast, mpaType):
                 EQTest = []
                 SubDict = []
                 listMessage = await ctx.channel.send('Please wait... Building list')
-                if mpaExpirationEnabled:
-                    expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaExpirationTime))
-                else:
-                    expirationDate = ''
+                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaExpirationTime))
                 for indexEQTest in range(maxParticipant):
                     EQTest.append(f"PlaceHolder{ctx.channel.id}{listMessage.id}")
                 startDate = datetime.utcnow()
                 await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```dsconfig\nStarting MPA. Please use !addme to sign up!```')
                 # Update the DB with the MPA data
                 await convertAndStartMPADBTable(ctx, listMessage, EQTest, SubDict, privateMpa, participantCount, maxParticipant, expirationDate, startDate)
-                return
+                if mpaExpirationEnabled .lower() == 'true':
+                    addToExpirationDict = {
+                        'expirationDate': expirationDate,
+                        'listMessageID': str(listMessage.id)
+                    }
+                    return addToExpirationDict
+                else:
+                    return
             except discord.Forbidden:
                 print (ctx.author.name + f'Tried to start an MPA at {ctx.guild.name}, but failed.')
                 await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
@@ -168,6 +171,7 @@ async def removempa(ctx, client):
             await ctx.channel.purge(limit=2, around=startTime, check=is_bot)
             # Deletes the rest of the content in the channel, except for pinned messages
             await ctx.channel.purge(limit=100, after=startTime, check=is_pinned)
+            return str(mpaMessage.id)
         except KeyError:
             pass
     else:
@@ -242,10 +246,7 @@ async def addme(ctx, mpaArg: str = 'none'):
                 else:
                     mpaClass = classMatch.findClass(mpaArg)
                     classRole = classIcons[mpaClass]
-                if mpaDBDict['mpaExpirationEnabled']:
-                    expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-                else:
-                    expirationDate = ''
+                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
                 if mpaArg == 'reserve' or 'reserveme' in ctx.message.content:
                     if not personInMPA: 
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], "```fix\nReserve list requested. Adding...```")
@@ -356,10 +357,7 @@ async def addUser(ctx, user, mpaArg):
                     else:
                         mpaClass = classMatch.findClass(mpaArg)
                         classRole = classIcons[mpaClass]
-                if mpaDBDict['mpaExpirationEnabled']:
-                    expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-                else:
-                    expirationDate = ''
+                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
                 if mpaArg == 'reserve' or 'reserve' in ctx.message.content:
                     if not user in mpaDBDict['EQTest']: 
                         await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], "```fix\nReserve list requested. Adding...```")
@@ -411,10 +409,7 @@ async def removeme(ctx):
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
-            if mpaDBDict['mpaExpirationEnabled']:
-                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-            else:
-                expirationDate = ''
+            expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
             await ctx.message.delete()
             for index, item in enumerate(mpaDBDict['EQTest']):
                 if (mpaDBDict['EQTest'][index] == f"PlaceHolder{ctx.channel.id}{mpaDBDict['listMessage'].id}"):
@@ -461,10 +456,7 @@ async def removeUser(ctx, user):
             await sendErrorMessage.mpaChannelNotEnabled(ctx, removeUser.__name__)
         return
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
-        if mpaDBDict['mpaExpirationEnabled']:
-            expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-        else:
-            expirationDate = ''
+        expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
         if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
             if len(mpaDBDict['EQTest']):
                     for index in range(len(mpaDBDict['EQTest'])):
@@ -534,10 +526,7 @@ async def openmpa(ctx):
         else:
             mpaDBDict['guestEnabled'] = True
             await ctx.send('Opened MPA to non-members!')
-            if mpaDBDict['mpaExpirationEnabled']:
-                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-            else:
-                expirationDate = ''
+            expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nMPA is now open to non-members.```')
             await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
             return
@@ -560,10 +549,7 @@ async def closempa(ctx):
         else:
             mpaDBDict['guestEnabled'] = False
             await ctx.send('Closed MPA to Members only.')
-            if mpaDBDict['mpaExpirationEnabled']:
-                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-            else:
-                expirationDate = ''
+            expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
             await generateList(ctx, mpaDBDict['listMessage'].id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], '```fix\nMPA is now closed to non-members```')
             await convertAndUpdateMPADBTable(ctx, mpaDBDict['listMessage'], mpaDBDict['EQTest'], mpaDBDict['SubDict'], mpaDBDict['privateMpa'], mpaDBDict['participantCount'], mpaDBDict['maxParticipant'], expirationDate)
             return
@@ -584,10 +570,7 @@ async def changeClass(ctx, mpaArg):
         return
     if str(ctx.channel.id) in mpaDBDict['mpaChannelList']:
         if mpaDBDict['activeMPAList'][f'{str(ctx.channel.id)}']:
-            if mpaDBDict['mpaExpirationEnabled']:
-                expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
-            else:
-                expirationDate = ''
+            expirationDate = (int(time.mktime(datetime.now().timetuple())) + int(mpaDBDict['mpaExpirationTime']))
             await ctx.message.delete()
             if len(mpaArg) > 2:
                 if len(mpaArg) == 4 and mpaArg != 'none':
@@ -685,7 +668,7 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
             playerlist += (f"{str(sCount)}. {word}\n")
             sCount += 1 
 
-    if privateMpa:
+    if privateMpa.lower() == 'true':
         mpaFriendly = 'Yes'
     else:
         mpaFriendly = 'No'

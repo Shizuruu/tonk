@@ -7,6 +7,7 @@ import traceback
 import sys
 import os
 import re
+import shutil
 import datetime
 import json
 import shlex
@@ -41,7 +42,8 @@ client = commands.Bot(command_prefix=commandPrefix)
 client.remove_command('help')
 lastRestart = str(datetime.now())
 
-
+# In memory dictionary used to keep track of mpaexpiration dates.
+expirationDate = {}
 
 # Checks used throughout the code
 def is_bot(m):
@@ -58,6 +60,34 @@ def findRoleID(roleName, message):
     else:
         return 0
 
+# Function that loads all the mpa expiration dates from the DB into memory.
+def loadMpaExpirations():
+    mpaDict = tonkDB.queryExpirationKeys()
+    defaultConfigQuery = tonkDB.configDefaultQueryDB()
+    for index, value in enumerate(mpaDict['Items']):
+        try:
+            for channelID in mpaDict['Items'][index]['activeMPAs']:
+                try:
+                    mpaExpirationEnabled = mpaDict['Items'][index]['mpaConfig'][channelID]['mpaExpirationEnabled']
+                except KeyError:
+                    mpaExpirationEnabled = defaultConfigQuery['Items'][0]['mpaConfig']['mpaExpirationEnabled']
+                if mpaExpirationEnabled.lower() == 'true':
+                    if len(mpaDict['Items'][index]['activeMPAs'][channelID]) > 0:
+                        for messageID in mpaDict['Items'][index]['activeMPAs'][channelID]:
+                            expirationDate[messageID] = {}
+                            expirationDate[messageID]['expirationDate'] = mpaDict['Items'][index]['activeMPAs'][channelID][messageID]['expirationDate']
+                            #expirationDate[messageID]['expirationEnabled'] = mpaDict['Items'][index]['mpaConfig'][channelID]['mpaExpirationEnabled']
+                    else:
+                        pass
+                else:
+                    pass
+        except KeyError:
+            pass
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            return None
+    print (expirationDate)
+    return True
 
 async def isManager(ctx):
     # Administrator permissions will grant permissions regardless of role.
@@ -93,16 +123,16 @@ async def isManager(ctx):
 
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
 async def expiration_checker():
-    global mpaWarningCounter
     await client.wait_until_ready()
-    for key in expirationDate:
+    for messageID in expirationDate:
         nowTime = int(time.mktime(datetime.now().timetuple()))
-        if (expirationDate[key] - 15) == nowTime and mpaRemoved[key] == False:
-            await client.get_channel(key).send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `{mpaWarningCounter}` seconds if no actions are taken!** :warning:")
-        if expirationDate[key] == nowTime and mpaRemoved[key] == False:
+        if (int(expirationDate[messageID]['expirationDate']) - 60) == nowTime:
+            await client.fetch_message(int(messageID)).channel.send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `60` seconds if no actions are taken!** :warning:")
+        if expirationDate[messageID]['expirationDate'] == nowTime:
             print ("Expiration reached")
-            await client.get_channel(key).send(f"{command_prefix}removempa")
-            mpaRemoved[key] = False
+            context = await client.get_context(client.fetch_message(int(messageID)))
+            removeMpaID = await mpaControl.removempa(context, client)
+            del expirationDate[removeMpaID]
 
 # Background task that ticks every second and will start an mpa if the scheduled time comes
 async def mpa_schedulerclock():
@@ -327,7 +357,12 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
             print (ctx.author.name + f' Tried to start an MPA at {ctx.message.guild.name}, but failed.')
             await ctx.author.send('I lack permissions to set up an MPA! Did you make sure I have the **Send Messages** and **Manage Messages** permissions checked?')
             return
-        await mpaControl.startmpa(ctx, message, mpaType)
+        startmpaResult = await mpaControl.startmpa(ctx, message, mpaType)
+        if startmpaResult is not None:
+            expirationDate[startmpaResult['listMessageID']] = {
+                'expirationDate': startmpaResult['expirationDate']
+            }
+            print (expirationDate)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_startmpa.name}")
     else:
@@ -337,7 +372,10 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
 async def cmd_removempa(ctx):
     hasManagerPermissions = await isManager(ctx)
     if hasManagerPermissions or ctx.author.id == client.user.id:
-        await mpaControl.removempa(ctx, client)
+        removeMpaID = await mpaControl.removempa(ctx, client)
+        if removeMpaID is not None:
+            del expirationDate[removeMpaID]
+            print (expirationDate)
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_removempa.name}")
     else:
@@ -424,64 +462,64 @@ async def cmd_disablempachannel(ctx):
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_disablempachannel.name}")
         return
 
-# This sets the value for the "Meeting in" section of the MPA list.
-@client.command(name='setmpablock')
-async def cmd_setmpablock(ctx, blockNumber):
-    if ctx.author.top_role.permissions.administrator:
-        await mpaChannel.setmpablock(ctx, blockNumber)
-        return
-    else:
-        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_setmpablock.name}")
-        return
+# # This sets the value for the "Meeting in" section of the MPA list.
+# @client.command(name='setmpablock')
+# async def cmd_setmpablock(ctx, blockNumber):
+#     if ctx.author.top_role.permissions.administrator:
+#         await mpaChannel.setmpablock(ctx, blockNumber)
+#         return
+#     else:
+#         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_setmpablock.name}")
+#         return
 
 
-# Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
-@client.command(name='enablempaexpiration')
-async def cmd_enablempaexpiration(ctx):
-    if ctx.author.top_role.permissions.administrator:
-        try:
-            if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-                await ctx.send('This channel already has auto expiration enabled!')
-                return
-            else:
-                mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
-        except KeyError:
-            print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
-            mpaExpirationConfig[str(ctx.guild.id)] = []
-            mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
-        try:
-            dumpMpaAutoExpiration(mpaExpirationConfig)
-            print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
-            await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
-        except Exception as e:
-            await ctx.send('Error enabling the channel.')
-            print (e)
-        return
+# # Enables automatic MPA deletion after a certain period of inactivity that was configured at the top of this file.
+# @client.command(name='enablempaexpiration')
+# async def cmd_enablempaexpiration(ctx):
+#     if ctx.author.top_role.permissions.administrator:
+#         try:
+#             if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+#                 await ctx.send('This channel already has auto expiration enabled!')
+#                 return
+#             else:
+#                 mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
+#         except KeyError:
+#             print (f'{ctx.guild.id} is not in the mpa auto-expiration dictionary. Adding...')
+#             mpaExpirationConfig[str(ctx.guild.id)] = []
+#             mpaExpirationConfig[str(ctx.guild.id)].append(ctx.channel.id)
+#         try:
+#             dumpMpaAutoExpiration(mpaExpirationConfig)
+#             print (f'{ctx.author.name} has enabled auto-expiration for {ctx.channel.id} from the server {ctx.guild.id}')
+#             await ctx.channel.send(f'Enabled MPA auto expiration for {ctx.channel.mention}')
+#         except Exception as e:
+#             await ctx.send('Error enabling the channel.')
+#             print (e)
+#         return
 
-# Disables automatic MPA deletion in the channel this comamnd was called in.
-# Note that this automatically runs if the disablempachannel was called.
-@client.command(name='disablempaexpiration')
-async def cmd_disablempaexpiration(ctx):
-    if ctx.author.top_role.permissions.administrator:
-        if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
-            try:
-                for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
-                    if ctx.channel.id == item:
-                        mpaExpirationConfig[str(ctx.guild.id)].pop(index)
-                        try:
-                            dumpMpaAutoExpiration(mpaExpirationConfig)
-                            channel = client.get_channel(item)
-                            await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
-                            return
-                        except Exception as e:
-                            await ctx.send('Error removing the channel from the list.')
-                            print (e)
-            except Exception as e:
-                await ctx.send('Error removing the channel.')
-                print (e)
-        else:
-            await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
-            return
+# # Disables automatic MPA deletion in the channel this comamnd was called in.
+# # Note that this automatically runs if the disablempachannel was called.
+# @client.command(name='disablempaexpiration')
+# async def cmd_disablempaexpiration(ctx):
+#     if ctx.author.top_role.permissions.administrator:
+#         if ctx.channel.id in mpaExpirationConfig[str(ctx.guild.id)]:
+#             try:
+#                 for index, item in enumerate(mpaExpirationConfig[str(ctx.guild.id)]):
+#                     if ctx.channel.id == item:
+#                         mpaExpirationConfig[str(ctx.guild.id)].pop(index)
+#                         try:
+#                             dumpMpaAutoExpiration(mpaExpirationConfig)
+#                             channel = client.get_channel(item)
+#                             await ctx.send(f'Disabled auto expiration for {ctx.channel.mention}')
+#                             return
+#                         except Exception as e:
+#                             await ctx.send('Error removing the channel from the list.')
+#                             print (e)
+#             except Exception as e:
+#                 await ctx.send('Error removing the channel.')
+#                 print (e)
+#         else:
+#             await ctx.send("The channel was not found! It may have already been disabled or wasn''t enabled in the first place!")
+#             return
 
 @client.command(name='config')
 async def cmd_config(ctx, *args):
@@ -614,12 +652,21 @@ async def cmd_schedulempa(ctx, requestedTime, message: str = '', mpaType: str = 
         await ctx.send('This is not an MPA channel! See `!help` for more information')
         return
 
-# Finishing bootup, prints uptime/status information to my control panel server/channel.
+# Finishing bootup, prints uptime/status information to the control channel
 print ('Logging into Discord...\n')
 @client.event
 async def on_ready():
     FreshStart = False
     connectedServers = 0
+    mpaExpirationLoad = loadMpaExpirations()
+    if mpaExpirationLoad is None:
+        await client.logout()
+    # Flush tmp cache
+    try:
+        shutil.rmtree('tmp')
+        os.makedirs('tmp')
+    except FileNotFoundError:
+        os.makedirs('tmp')
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -631,20 +678,20 @@ async def on_ready():
     loadupTime = (end - start)
     if loadupTime < 20:
         FreshStart = True
-    reconnectRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=503296384070320149)
+    reconnectRole = discord.utils.get(client.get_guild(ConfigDict['OWNERSERVERID']).roles, id=ConfigDict['RECONNECTEDROLEID'])
     print ('Tonk-Dev is now ready\nFinished loadup in ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(loadupTime)))
     print('------')
     game = discord.Game(name='just tonk things')
     await client.change_presence(activity=game, status=discord.Status.online)
-    onlineRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370337403769978880)
+    onlineRole = discord.utils.get(client.get_guild(ConfigDict['OWNERSERVERID']).roles, id=ConfigDict['ONLINEROLEID'])
     if FreshStart == True:
-        await client.get_channel(322466466479734784).send(f'Tonk-Dev is now {onlineRole.mention}' + '\nStartup time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(loadupTime)) + '\nConnected to **' + str(connectedServers) + '** servers' + '\nLast Restarted: ' + lastRestart)
+        await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk-Dev is now {onlineRole.mention}' + '\nStartup time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(loadupTime)) + '\nConnected to **' + str(connectedServers) + '** servers' + '\nLast Restarted: ' + lastRestart)
     else:
-        await client.get_channel(322466466479734784).send(f'Tonk has {reconnectRole.mention}')
-    # while True:
-    #     await expiration_checker()
-    #     await mpa_schedulerclock()
-    #     await asyncio.sleep(1)
+        await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk has {reconnectRole.mention}')
+    while True:
+        await expiration_checker()
+      #  await mpa_schedulerclock()
+        await asyncio.sleep(1)
 
 # Global command handler
 #@client.event

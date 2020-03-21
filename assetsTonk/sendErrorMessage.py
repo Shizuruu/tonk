@@ -23,6 +23,12 @@ async def noCommandPermissions(ctx, commandName):
     await ctx.send(f'You do not have permissions to use this command.\nError ID: {errorID}')
     return
 
+async def mpaTypeNotFound(ctx, mpaType, commandName):
+    errorID = 'agurus'
+    print (f'Error {noCommandPermissions.__name__} called by {ctx.author.name} (ID: {ctx.author.id}), command called from: {commandName}')
+    await ctx.send(f'Unable to find a banner with the name {mpaType}! Please check your spelling.\nError ID: {errorID}')
+    return
+
 async def invalidArguments(ctx, invalidType, commandName, commandArgs):
     errorID = 'otamay'
     print (f'Error {invalidArguments.__name__} ({invalidType}) called by {ctx.author.name} (ID: {ctx.author.id}), command called from: {commandName}')

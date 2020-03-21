@@ -50,7 +50,7 @@ def checkConfigSyntax(ctx, configName, configValue):
                 return None
         elif configType == 'bool':
             if configValue.lower() == 'true' or configValue.lower() == 'false':
-                return None
+                return True
             else:
                 return None
         elif configType == 'timeNumber':
@@ -107,16 +107,16 @@ async def cmdConfigParser(ctx, *args):
                 else:
                     await showAllConfigs(ctx, dbQuery)
                 return
-            elif args[1].lower() in mpaConfig:
+            elif args[1] in mpaConfig:
                 if channelID is not None:
                     await showChannelConfig(ctx, dbQuery, args[1], channelID)
                 else:
                     await showChannelConfig(ctx, dbQuery, args[1])
                 return
-            elif args[1].lower() == 'server':
-                mpaConfig = {key.lower() for key in dbQuery['Items'][0]['mpaConfig']['global'].keys()}
+            elif args[1] == 'server':
+                mpaConfig = dbQuery['Items'][0]['mpaConfig']['global'].keys()
                 try:
-                    if args[2].lower() in mpaConfig:
+                    if args[2] in mpaConfig:
                         await showServerConfig(ctx, dbQuery, args[2])
                     else:
                         await showNothing(ctx, args[2])
@@ -304,8 +304,10 @@ async def showChannelConfig(ctx, dbQuery, configName, channelID: str = 'currentC
     else:
         em.set_author(name=f'Results for config {configName} for channel ID {channelID}')
     try:
-        resultValue = dbQuery[f'{configName}']
+        resultValue = dbQuery['Items'][0]['mpaConfig'][f'{channelID}'][f'{configName}']
     except KeyError:
+        traceback.print_exc(file=sys.stdout)
+        print (dbQuery)
         em = discord.Embed(color=failEmbedColor)
         em.add_field(name='Nothing found!', value='Nothing was found.')
         await ctx.send('', embed=em)
