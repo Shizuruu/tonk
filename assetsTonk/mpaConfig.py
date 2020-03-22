@@ -24,7 +24,13 @@ def checkConfigSyntax(ctx, configName, configValue):
     if configName in helpDict.keys():
         configType = helpDict[f'{configName}']['type']
         if configType == 'emojiID':
-            emoji = discord.utils.get(ctx.guild.emojis, id=int(configValue))
+            for item in ctx.guild.emojis:
+                emoji = f'<:{item.name}:{item.id}>'
+                if configValue == emoji:
+                    emoji = discord.utils.get(ctx.guild.emojis, id=item.id)
+                    break
+                else:
+                    emoji = None
             if emoji is None:
                 return None
             else:
