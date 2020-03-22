@@ -41,8 +41,9 @@ def checkConfigSyntax(ctx, configName, configValue):
         elif configType == 'hexColor':
             if configValue.startswith('#'):
                 try:
+                    print (configValue)
                     embedColor = configValue.lstrip('#')
-                    embedColor = discord.Colour(value=int(f"{configValue}", 16))
+                    embedColor = discord.Colour(value=int(f"{embedColor}", 16))
                     return True
                 except Exception:
                     traceback.print_exc(file=sys.stdout)
