@@ -47,20 +47,20 @@ async def tonk_help(arguement, message):
             em = discord.Embed(description=f'{message.author.mention}, I sent you some DMs.', colour=mainColour)
             await channel.send(embed=em)
             await message.author.send(f'**User level Commands**\n\n{userCommands}')
-            await message.author.send(f'\n\n**Manager Commands**\nThese commands require the user to have the **Manage Emojis** Permissions checked on their role\n\n{managerCommands}')
-            await message.author.send(f'\n\n**Administrator Commands**\nThese commands require the **Administrator** Permission checked on their role.\n\n{adminCommands}\n\nDo not add <> or [] to your arguments.\nFor more help, join {supportServerInvite} and ask your question in the #support channel.')
-            if 'ishana' in arguement:
-                await message.author.send(f'{ishanaExtra}')
+            await message.author.send(f'\n\n**Manager Commands**\nThese commands require the user to have a role that is designated as a manager.\n\n{managerCommands}')
+            await message.author.send(f'\n\n**Administrator Commands**\nThese commands require the **Administrator** Permission checked on their role.\n\n{adminCommands}')
+            await message.author.send(f'\n\n\n\nRemember, do not add <> or [] to your arguments.\nFor more help, join {supportServerInvite} and ask your question in the #support channel.')
         except Exception as e:
-            print (e)
+            traceback.print_exc(file=sys.stdout)
             return
         return
     elif 'gettingstarted' in arguement:
-        if message.author.top_role.permissions.manage_emojis or message.author.top_role.permissions.administrator:
+        if message.author.top_role.permissions.administrator:
             channel = message.channel
             em = discord.Embed(description=f'{message.author.mention}, I sent you a dm.', colour=mainColour)
             await channel.send(embed=em)
-            await message.author.send(f'{gettingStartedHelp}')
+            for chunk in [gettingStartedHelp[i:i+2000] for i in range(0, len(gettingStartedHelp), 2000)]:
+                await message.author.send(f'{chunk}')
         else:
             em = discord.Embed(description='Please have a server administrator use this command!', colour=0xB3ECFF)
             await message.channel.send(embed=em)

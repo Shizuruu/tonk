@@ -403,8 +403,11 @@ async def cmd_help(ctx):
 # Private messages the caller information to help them get started with using this bot.
 @client.command(name='gettingstarted')
 async def cmd_gettingstarted(ctx):
-    await tonkHelper.tonk_help('gettingstarted', ctx.message)
-    return
+    if ctx.author.top_role.permissions.administrator:
+        await tonkHelper.tonk_help('gettingstarted', ctx.message)
+        return
+    else:
+        await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_gettingstarted.name}")
 
 # Test if the bot works or not.
 @client.command(name='test')
@@ -415,7 +418,6 @@ async def cmd_test(ctx):
 # By default, Admins need to run this command so not every channel can have MPA commands be run on it.
 @client.command(name='enablempachannel')
 async def cmd_enablempachannel(ctx):
-    serverOnBoarded = ''
     if ctx.author.top_role.permissions.administrator:
         await mpaChannel.enablempachannel(ctx)
         return
@@ -490,6 +492,8 @@ async def cmd_closempa(ctx):
 # and a function that runs every second will check to see if it's time to start an MPA with the arguements provided in this command.
 @client.command(name='schedulempa')
 async def cmd_schedulempa(ctx, requestedTime, message: str = '', mpaType: str = 'default'):
+    await ctx.send('This command is currently disabled. Stay tuned for more details!')
+    return
     if ctx.channel.id in mpaChannels[str(ctx.guild.id)]:
         if ctx.author.top_role.permissions.manage_emojis or ctx.author.top_role.permissions.administrator or ctx.author.id == ConfigDict['OWNERID']:
             scheduledTime = 0
@@ -585,7 +589,7 @@ async def on_ready():
 
 # Behavior every time this bot joins another server. Tries to send a message to the general channel as well as logging the join event to the control panel server.
 @client.event
-async def on_server_join(server):
+async def on_guild_join(server):
     await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'```diff\n+ Joined {server.name} ```' + f'(ID: {str(server.id)})')
     general = find(lambda x: x.name == 'general',  server.channels)
     if general and general.permissions_for(server.me).send_messages:
@@ -593,7 +597,7 @@ async def on_server_join(server):
 
 # Logs the leave event on the control panel server.
 @client.event
-async def on_server_remove(server):
+async def on_guild_remove(server):
     await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'```diff\n- Left {server.name} ```'.format(server.name) + f'(ID: {str(server.id)})')
     
 

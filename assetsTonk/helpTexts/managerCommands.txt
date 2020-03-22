@@ -1,10 +1,9 @@
-`!startmpa <message>` - Starts an MPA with whatever message you put after the command being broadcasted out. This command can only be used on an registered MPA channel. The message may also ping roles/everyone if you include it in the message. In order to use spaces in your message you must put your message in quotes. Optionally, if you tag 8man at the end of the command, you can set the max players to 8 users instead of the usual 12.
-Example usage with 8man: `!startmpa "Hello world!" 8man`
-Example usage without 8man: `!startmpa "Hello world again!"`
+`!startmpa <mpaType> <message>` - Starts an MPA on the channel that users can register themselves to. This command can only be used on a channel that has MPAs enabled. Replace `<mpaType>` with the name of the MPA you want to start, such as "magatsu" and the bot will show a little banner above the list. Beyond the mpatype, you may type whatever message you wish to be placed above the list. Some mpatypes can change the total size of the mpa list.
+Example usage: `!startmpa elder This is an emergency, there is a wild planet-sized doggo rampaging out in space`
 `!removempa` - Removes the MPA list and clears out the channel.
-`!add <name> <class>` - Adds the name in with the class specified. Note that there are no spaces allowed in the name. (Example: `!add tonk hr` will add the name **tonk** in with the class **hero**)
+`!add <name> <class><subclass>` - Adds the name in with the class specified. Note that there are no spaces allowed in the name. (Example: `!add tonk hr` will add the name **tonk** in with the class **hero**)
 `!remove <name>` - Removes the name from the list (if present)
 `!ffs` - Clears everything in the channel except for the MPA list. Useful for clearing out any unneeded content that may develop in the channel.
-`!schedulempa <##h/m/s> <message> <type>` - Schedules an MPA to be created in the same channel at a later time. This command can only be used on an regstered MPA channel. `<type>` is optional if you do not want to set it up for an 8 player MPA.
+`!schedulempa <##h/m/s> <message> <type>` - *Currently does not work* Schedules an MPA to be created in the same channel at a later time. This command can only be used on an regstered MPA channel. `<type>` is optional if you do not want to set it up for an 8 player MPA.
 Example: `!schedulempa 2h "Testing test" 8man"` will schedule an 8man MPA 2 hours after typing the command out.
 `!schedulempa 2h "Testing test"` will schedule the MPA 2 hours from now like a normal one. 

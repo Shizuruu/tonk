@@ -1,14 +1,25 @@
-***Welcome to Tonk!***
+***Hi! I'm Tonk!***
 
 This is a quick guide to get you started with setting up Tonk for use in your server.
 
-First, you should check the permissions for the people who you would like to have the permissions to start and manage MPAs.
-For simplicity sake, I will be referring to these people as **MPA Managers** from here on, that includes you too, server administrator.
+You might ask.. What is an MPA?
+MPA is the short name for Multi-Party Alliance. Areas in PSO2 that are classified as a Multi Party area can have up to 3 other parties for a total of 12 players in the same area. Typically, organized MPAs are created to take on end game bosses such as Dark Falz, which are designed for 12 player parties.
 
-**Please verify that your MPA Managers have these permissions on their roles**:
-```css
-Manage Emojis
-```
+First, you want to find the channels that you want to allow MPAs to be created in. I recommend making a channel that is dedicated to running the list, as the MPA list can easily get buried underneath conversations if you configure a conversation channel to be used for MPAs.
+To set a channel as an MPA channel, go to the channel and type `!enablempachannel`. The bot will register the text channel and then you will be able to create MPAs on the channel.
+
+If you ever want to deactivate a channel, simply type `!disablempachannel` in the channel you want to deactivate MPA functions.
+
+Next up, you'll want to consider what roles will be designated as **managers**.
+Roles that are designated as a manager will grant users with that role the ability to create and remove MPAs, add and remove other users, and a few other useful functions that make managing the MPA a little easier.
+
+You can set roles as managers in 2 ways:
+
+1. Desginating a manager in just one channel:
+Go to the text channel you want to make a role an MPA manager of and type `!config set mpaManagerRoles @<rolename>` where <rolename> is the name of the role you want to grant permissions to.
+
+2. Designating a manager for the whole server
+On any channel (that Tonk can see) type `!config set server mpaManagerRoles @<rolename>`. This will grant the role manager permissions to all channels across the server.
 
 Next, you will want to make sure Tonk has certain permissions for the channel you want to dedicate as the MPA channels. Tonk operates under the condition that the MPA channel will not be used as a conversational channel, but as a separate dedicated channel to hold the list. This means **Tonk can and will delete messages from the channel that you set it to be active on, so please keep any conversations out of the MPA channel if you want to hold onto it for future references.**
 
@@ -20,14 +31,9 @@ Read Text Channels & See Voice Channels
 Read Message History
 ```
 
-After you set the permissions up for the channels and MPA managers, you will want to set a channel as an MPA channel. You can set more than one in your server, but please note the condition I stated above.
+Now that you are all set up, type `!help` to learn about the rest of the commands Tonk offers! There is a number of things you can customize Tonk with so I highyly recommend you take a look!
 
-**Note that users with the Administrator permission can only set/unset MPA channels**
-
-Pick a channel, then type `!enablempachannel`. Tonk will register that as an MPA channel and you will be able to start MPAs from there!
-
-If you change your mind about the channel, then type `!disablempachannel` in the same channel and Tonk will deregister the channel.
-
-Now that you are all set up, type `!help` to learn about the rest of the commands Tonk offers!
+Need help? Feel free to pop into this server to get help and stay up to date with any announcements
+https://discord.gg/7QttYRd
 
 Enjoy!

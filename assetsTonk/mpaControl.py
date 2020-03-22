@@ -85,7 +85,7 @@ async def startmpa(ctx, broadcast, mpaType):
         return
     # Dont call return here since banners are not required for an mpa to function.
     if mpaType.lower() in specialMPATypes.keys():
-        maxParticipant = specialMPATypes[f'{mpaType}']
+        maxParticipant = int(specialMPATypes[f'{mpaType}'])
     else:
         maxParticipant = 12
     if not activeMPAList[f'{str(ctx.channel.id)}']:
@@ -311,10 +311,11 @@ async def addme(ctx, mpaArg: str = 'none'):
 
 async def addUser(ctx, user, mpaArg):
     mpaDBDict = await loadMpaVariables(ctx)
+    appended = False
     if type(mpaDBDict) is dict:
         classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
         heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
-        subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defualtConfigQuery'])
+        subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defaultConfigQuery'])
         allowedMpaRoles = []
         if mpaDBDict['privateMpa'] == 'true':
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])

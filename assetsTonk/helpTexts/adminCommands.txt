@@ -1,7 +1,3 @@
 `!enablempachannel` - Registers the channel as an MPA channel and enables MPAs to be started in the channel.
 `!disablempachannel` - Disables the ability to start MPAs in this channel (DOES NOT DELETE THE CHANNEL)
-`!enablempaexpiration` - Enables the function to automatically close the MPA after a certain period of inactivity. Currently, the wait time before an MPA auto-closes itself is 90 minutes.
-`!disablempaexpiration` - Disables the expiration function for a channel.
-`!setmpablock <number>/clear` - Sets the MPA block for display on the list. Typing `!setmpablock clear` will remove the Meeting at field from the list.
-
-Note that disabling the mpa channel will also remove the mpa expiration function for the channel as well. Meaning that if you disable the channel, and then re-enable the channel you will have to also re-enable the auto expiration function too.
+`!config` - Sets preferences for the channel or server. See this link for more information: https://github.com/ahinh43/tonk/wiki/Configuration
