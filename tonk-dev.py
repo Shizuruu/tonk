@@ -119,6 +119,18 @@ async def isManager(ctx):
             return None
     return None
 
+
+# Function called if the message ID in the expirationDate dictionary does not match with the new message ID passed by the mpaControl functions
+# Copies the data from the old message ID, removes old message ID entry and then readds the information with the new message ID.
+def fixExpirationDict(mpaMessageID):
+    if mpaMessageID['oldMessageID'] in expirationDate.keys() and mpaMessageID['newMessageID'] not in expirationDate.keys():
+        expirationTime = expirationDate[mpaMessageID['oldMessageID']]['expirationDate']
+        del expirationDate[mpaMessageID['oldMessageID']]
+        expirationDate[mpaMessageID['newMessageID']] = {
+            'channelID': mpaMessageID['newMessageID'],
+            'expirationDate': expirationTime
+        }
+
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
 async def expiration_checker():
     await client.wait_until_ready()
@@ -355,7 +367,9 @@ async def cmd_removempa(ctx):
 # Adds the user into the EQ list in the EQ channel. Optionally takes a class as an arguement. If one is passed, add the class icon and the user's name into the EQ list.
 @client.command(name='addme', aliases=['reserveme'])
 async def cmd_addme(ctx, mpaArg: str = 'none'):
-    await mpaControl.addme(ctx, mpaArg)
+    mpaMessageID = await mpaControl.addme(ctx, mpaArg)
+    if mpaMessageID is not None:
+        fixExpirationDict(mpaMessageID)
     return
 
 # Manager command that adds a custom name to the MPA.
@@ -363,7 +377,9 @@ async def cmd_addme(ctx, mpaArg: str = 'none'):
 async def cmd_add(ctx, user: str = '', mpaArg: str = 'none'):
     hasManagerPermissions = await isManager(ctx)
     if hasManagerPermissions:
-        await mpaControl.addUser(ctx, user, mpaArg)
+        mpaMessageID = await mpaControl.addUser(ctx, user, mpaArg)
+        if mpaMessageID is not None:
+            fixExpirationDict(mpaMessageID)
         return
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_add.name}")
@@ -381,7 +397,9 @@ async def cmd_removeme(ctx):
 async def cmd_remove(ctx, user):
     hasManagerPermissions = await isManager(ctx)
     if hasManagerPermissions:
-        await mpaControl.removeUser(ctx, user)
+        mpaMessageID = await mpaControl.removeUser(ctx, user)
+        if mpaMessageID is not None:
+            fixExpirationDict(mpaMessageID)
         return
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_remove.name}")
@@ -391,7 +409,9 @@ async def cmd_remove(ctx, user):
 # Changes the class of the caller to another one they specify. Or none if they call for none of the classes.
 @client.command(name='changeclass')
 async def cmd_changeclass(ctx, mpaArg: str = 'none'):
-    await mpaControl.changeClass(ctx, mpaArg)
+    mpaMessageID = await mpaControl.changeClass(ctx, mpaArg)
+    if mpaMessageID is not None:
+        fixExpirationDict(mpaMessageID)
     return
 
 # Private messages the caller information. Special instructions are added if calling from a certain server.
