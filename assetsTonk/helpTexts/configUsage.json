@@ -36,8 +36,8 @@
     },
     "mpaExpirationTime": {
         "type": "timeNumber",
-        "setUsage": "mpaExpirationTime <number><h/m/s>",
-        "where": "`<number>` - Desired number in either hours, minutes, or seconds\n`<h/m/s>` - h for hours, m for minutes, s for seconds",
+        "setUsage": "mpaExpirationTime <number>",
+        "where": "`<number>` - Number of seconds inactivity before automatically closing.",
         "example": "mpaExpirationTime 2h",
         "removeUsage": "mpaExpirationTime"
     },

@@ -5,7 +5,7 @@ from boto3.dynamodb.conditions import Key
 ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 
-dynamodb = boto3.resource('dynamodb', region_name=f"{ConfigDict['DB-REGION']}")
+dynamodb = boto3.resource('dynamodb', region_name=f"{ConfigDict['DB-REGION']}", aws_access_key_id=f"{ConfigDict['AWS_ACCESS_KEY_ID']}", aws_secret_access_key=f"{ConfigDict['AWS_SECRET_ACCESS_KEY']}")
 dbTable = dynamodb.Table(f"{ConfigDict['DB-NAME']}")
 
 def gidQueryDB(guildID):

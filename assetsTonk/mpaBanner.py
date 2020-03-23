@@ -7,8 +7,7 @@ from os.path import isfile, join
 ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 bucketName = ConfigDict['S3_BUCKET_NAME']
-
-s3_client = boto3.client('s3')
+s3_client = boto3.client('s3', aws_access_key_id=f"{ConfigDict['AWS_ACCESS_KEY_ID']}", aws_secret_access_key=f"{ConfigDict['AWS_SECRET_ACCESS_KEY']}")
 
 
 def getMpaBanner(bannerName):
