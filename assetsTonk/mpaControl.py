@@ -51,10 +51,10 @@ async def loadMpaVariables(ctx):
         varDict['maxParticipant'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
        # varDict['privateMpa'] = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
         varDict['privateMpa'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['privateMpa']
-        varDict['classIcons'] = parseDB.getClassIcons(defaultConfigQuery)
+        varDict['classIcons'] = parseDB.getDefaultDBConfig(defaultConfigQuery, 'classIDs')
         varDict['startDate'] = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['startDate']
         # Load configuration flags for the MPA
-        varDict['mpaExpirationTime'] = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
+        varDict['mpaExpirationTime'] = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'mpaExpirationTime')
         # Load the message using the message ID. Should the message get deleted then send a new message and work off of that using the data loaded from the DB.
         try:
             varDict['oldMessageID'] = listMessageID
@@ -86,9 +86,9 @@ async def startmpa(ctx, broadcast, mpaType):
         activeMPAList = dbQuery['Items'][0]['activeMPAs']
         specialMPATypes = defaultConfigQuery['Items'][0]['specialMpaTypeSize']
         # Load configuration items
-        privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
-        mpaExpirationEnabled = parseDB.getMpaExpirationEnabled(ctx.channel.id, dbQuery, defaultConfigQuery)
-        mpaExpirationTime = parseDB.getMpaExpirationTime(ctx.channel.id, dbQuery, defaultConfigQuery)
+        privateMpa = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'privateMpa')
+        mpaExpirationEnabled = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'mpaExpirationEnabled')
+        mpaExpirationTime = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'mpaExpirationTime')
     except KeyError as e:
         print (e)
         await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
@@ -154,7 +154,7 @@ async def startmpa(ctx, broadcast, mpaType):
         SubDict = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['SubList']
         listMessage = await ctx.fetch_message(listMessageID)
         maxParticipant = dbQuery['Items'][0]['activeMPAs'][f'{str(ctx.channel.id)}'][f'{str(listMessageID)}']['maxParticipants']
-        privateMpa = parseDB.getPrivateMpa(ctx.channel.id, dbQuery, defaultConfigQuery)
+        privateMpa = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'privateMpa')
         await generateList(ctx, listMessage.id, dbQuery, defaultConfigQuery, EQTest, SubDict, privateMpa, participantCount, maxParticipant, '```fix\nThere is already an MPA being made here!```')
     # else:
     #     await sendErrorMessage.mpaChannelNotEnabled(ctx, startmpa.__name__)
@@ -202,12 +202,12 @@ async def addme(ctx, mpaArg: str = 'none'):
     appended = False
     mpaDBDict = await loadMpaVariables(ctx)
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
-        heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
-        subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defaultConfigQuery'])
+        classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
+        heroClasses = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'heroClasses')
+        subbableHeroClasses = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'subbableHeroClasses')
         allowedMpaRoles = []
         if mpaDBDict['privateMpa'] == 'true':
-            allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])
+            allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'])
     else:
         if mpaDBDict is KeyError:
             await sendErrorMessage.mpaChannelNotEnabled(ctx, addme.__name__)
@@ -217,10 +217,21 @@ async def addme(ctx, mpaArg: str = 'none'):
     if (str(ctx.channel.id)) in (mpaDBDict['mpaChannelList']):
         for index in range(len(ctx.author.roles)):
             if mpaDBDict['privateMpa'] == 'true':
-                if str(ctx.author.roles[index].id) in allowedMpaRoles:
-                    allowJoinMpa = True
+                if allowedMpaRoles['channelAllowedRoles'] is not None:
+                    if str(ctx.author.roles[index].id) in allowedMpaRoles['channelAllowedRoles']:
+                        allowJoinMpa = True
+                        break
+                    if allowedMpaRoles['serverAllowedRoles'] is not None:
+                        if str(ctx.author.roles[index].id) in allowedMpaRoles['serverAllowedRoles']:
+                            allowJoinMpa = True
+                            break
+                elif allowedMpaRoles['serverAllowedRoles'] is not None:
+                    if str(ctx.author.roles[index].id) in allowedMpaRoles['serverAllowedRoles']:
+                        allowJoinMpa = True
+                        break
             else:
                 allowJoinMpa = True
+                break
         if (allowJoinMpa == False and mpaDBDict['privateMpa'] == 'true'):
             await ctx.send('You are not whitelisted to join this MPA.')
             await ctx.message.delete()
@@ -330,9 +341,9 @@ async def addUser(ctx, user, mpaArg):
     mpaDBDict = await loadMpaVariables(ctx)
     appended = False
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
-        heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
-        subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defaultConfigQuery'])
+        classIcons = classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
+        heroClasses = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'heroClasses')
+        subbableHeroClasses = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'subbableHeroClasses')
         allowedMpaRoles = []
         if mpaDBDict['privateMpa'] == 'true':
             allowedMpaRoles = parseDB.getAllowedMpaRoles(ctx.channel.id, mpaDBDict['dbQuery'], mpaDBDict['defaultConfigQuery'])
@@ -420,7 +431,7 @@ async def removeme(ctx):
     inMPA = False
     mpaDBDict = await loadMpaVariables(ctx)
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
+        classIcons = classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
     else:
         if mpaDBDict is KeyError:
             await sendErrorMessage.mpaChannelNotEnabled(ctx, removeme.__name__)
@@ -468,7 +479,7 @@ async def removeme(ctx):
 async def removeUser(ctx, user):
     mpaDBDict = await loadMpaVariables(ctx)
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
+        classIcons = classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
     else:
         if mpaDBDict is KeyError:
             await sendErrorMessage.mpaChannelNotEnabled(ctx, removeUser.__name__)
@@ -532,7 +543,7 @@ async def removeUser(ctx, user):
 async def openmpa(ctx):
     mpaDBDict = await loadMpaVariables(ctx)
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
+        classIcons = classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
     else:
         if mpaDBDict is KeyError:
             await sendErrorMessage.mpaChannelNotEnabled(ctx, openmpa.__name__)
@@ -555,7 +566,7 @@ async def openmpa(ctx):
 async def closempa(ctx):
     mpaDBDict = await loadMpaVariables(ctx)
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
+        classIcons = classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
     else:
         if mpaDBDict is KeyError:
             await sendErrorMessage.mpaChannelNotEnabled(ctx, closempa.__name__)
@@ -579,9 +590,9 @@ async def changeClass(ctx, mpaArg):
     inMPA = False
     mpaDBDict = await loadMpaVariables(ctx)
     if type(mpaDBDict) is dict:
-        classIcons = parseDB.getClassIcons(mpaDBDict['defaultConfigQuery'])
-        heroClasses = parseDB.getHeroClasses(mpaDBDict['defaultConfigQuery'])
-        subbableHeroClasses = parseDB.getSubbableHeroClasses(mpaDBDict['defaultConfigQuery'])
+        classIcons = classIcons = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'classIDs')
+        heroClasses = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'heroClasses')
+        subbableHeroClasses = parseDB.getDefaultDBConfig(mpaDBDict['defaultConfigQuery'], 'subbableHeroClasses')
     else:
         if mpaDBDict is KeyError:
             await sendErrorMessage.mpaChannelNotEnabled(ctx, changeClass.__name__)
@@ -656,11 +667,11 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
     playerlist = '\n'
     splitstr = ''
     ## Start Configuration Queries
-    activeServerIcon = parseDB.getActiveServerSlotID(ctx.channel.id, dbQuery, defaultConfigQuery)
-    inactiveServerIcon = parseDB.getInactiveServerSlotID(ctx.channel.id, dbQuery, defaultConfigQuery)
-    embedColorHex = parseDB.getEmbedColor(ctx.channel.id, dbQuery, defaultConfigQuery)
-    mpaBlockNumber = parseDB.getMpaBlock(ctx.channel.id, dbQuery, defaultConfigQuery)
-    classIcons = parseDB.getClassIcons(defaultConfigQuery)
+    activeServerIcon = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'activeServerSlot')
+    inactiveServerIcon = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'inactiveServerSlot')
+    embedColorHex = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'embedColor')
+    mpaBlockNumber = parseDB.getDBConfig(ctx.channel.id, dbQuery, defaultConfigQuery, 'mpaBlock')
+    classIcons = parseDB.getDefaultDBConfig(defaultConfigQuery, 'classIDs')
     embedColor = embedColorHex.lstrip('#')
     embedColor = discord.Colour(value=int(embedColor, 16))
     ## End Configuration queries

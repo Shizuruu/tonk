@@ -89,8 +89,8 @@ def loadMpaExpirations():
 
 async def isManager(ctx):
     # Administrator permissions will grant permissions regardless of role.
-    if ctx.author.top_role.permissions.administrator:
-        return True
+    # if ctx.author.top_role.permissions.administrator:
+    #     return True
     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
     mpaManagerRoles = parseDB.getMpaManagerRoles(ctx.channel.id, dbQuery)
     mpaChannelList = dbQuery['Items'][0]['mpaChannels']
