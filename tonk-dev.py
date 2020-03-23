@@ -12,6 +12,7 @@ import datetime
 import json
 import shlex
 import time
+import logging
 from datetime import datetime
 from discord.utils import find
 from discord.ext import commands
@@ -23,6 +24,9 @@ from assetsTonk import parseDB
 from assetsTonk import sendErrorMessage
 from assetsTonk import mpaChannel
 from assetsTonk import mpaConfig
+
+# Set the logger file
+logging.basicConfig(filename='tonkdev.log',level=logging.INFO,format='%(asctime)s %(name)-4s %(levelname)-4s %(message)s',datefmt='%m-%d %H:%M')
 
 # These are all the constants that will be used throughout the bot. Most if not all of these are dictionaries that allow for different settings per server/channel to be used.
 print ('Beginning bot startup process...\n')
