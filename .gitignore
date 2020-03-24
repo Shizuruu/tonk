@@ -3,6 +3,7 @@ assetsTonk/__pycache__/
 *.png
 *.jpg
 *.bak
+*.log
 *mpa*.json
 .idea/
 assetsTonk/jsonDB/
