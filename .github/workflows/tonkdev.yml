@@ -1,0 +1,12 @@
+name: Tonk-Dev
+
+on: [push]
+
+jobs:
+    deploy:
+      runs-on: self-hosted
+      if: github.ref == 'refs/heads/dev'
+      steps:
+        - name: Run ansible playbook to deploy bot to server
+          run: |
+             curl -XPOST http://rundeck.adahinh.net:4440/api/33/job/ec2f35d5-18dd-4d4e-ac0c-49704e8a228d/run\?authtoken=${{ secrets.adahinh_Rundeck_API_Key }}
