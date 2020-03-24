@@ -9,4 +9,4 @@ jobs:
       steps:
         - name: Run ansible playbook to deploy bot to server
           run: |
-             curl -XPOST http://rundeck.adahinh.net:4440/api/33/job/ec2f35d5-18dd-4d4e-ac0c-49704e8a228d/run\?authtoken=${{ secrets.adahinh_Rundeck_API_Key }}
+             curl -XPOST http://rundeck.adahinh.net:4440/api/34/job/ec2f35d5-18dd-4d4e-ac0c-49704e8a228d/run\?authtoken=${{ secrets.adahinh_Rundeck_API_Key }}
