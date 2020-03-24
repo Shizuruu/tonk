@@ -5,3 +5,38 @@
 03-23 17:37 discord.client INFO Cleaning up tasks.
 03-23 17:37 discord.client INFO Cleaning up after 5 tasks.
 03-23 17:37 discord.client INFO Closing the event loop.
+03-23 19:15 discord.client INFO logging in using static token
+03-23 19:15 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-23 19:15 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-23 19:15 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-5glt",{"micros":67773,"calls":["discord-sessions-prd-1-51",{"micros":65244,"calls":["start_session",{"micros":52538,"calls":["api-prd-main-rzs3",{"micros":49433,"calls":["get_user",{"micros":3284},"add_authorized_ip",{"micros":3325},"get_guilds",{"micros":5088},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":5,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: 53e6e95d551bc99f84c9935fc8ea4741).
+03-23 20:44 discord.client INFO Cleaning up tasks.
+03-23 20:44 discord.client INFO Cleaning up after 5 tasks.
+03-23 20:44 discord.client INFO Closing the event loop.
+03-23 20:44 discord.client INFO logging in using static token
+03-23 20:44 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-23 20:44 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-23 20:44 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-hj1t",{"micros":43374,"calls":["discord-sessions-prd-1-45",{"micros":42161,"calls":["start_session",{"micros":35471,"calls":["api-prd-main-kr2z",{"micros":32549,"calls":["get_user",{"micros":2609},"add_authorized_ip",{"micros":1741},"get_guilds",{"micros":4280},"coros_wait",{"micros":2}]}]},"guilds_connect",{"micros":10,"calls":[]},"presence_connect",{"micros":3526,"calls":[]}]}]}] (Session ID: f414eb18f27eabc012c149f58307482e).
+03-23 20:45 discord.client INFO Cleaning up tasks.
+03-23 20:45 discord.client INFO Cleaning up after 5 tasks.
+03-23 20:45 discord.client INFO Closing the event loop.
+03-23 20:45 discord.client INFO logging in using static token
+03-23 20:45 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-23 20:45 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-23 20:45 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-bft8",{"micros":63713,"calls":["discord-sessions-prd-1-55",{"micros":59281,"calls":["start_session",{"micros":54705,"calls":["api-prd-main-psll",{"micros":49674,"calls":["get_user",{"micros":5539},"add_authorized_ip",{"micros":2227},"get_guilds",{"micros":2223},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":15,"calls":[]},"presence_connect",{"micros":0,"calls":[]}]}]}] (Session ID: 0ecd0fb0d85f1ef8d89a5bf931cdd645).
+03-23 20:46 discord.client INFO Cleaning up tasks.
+03-23 20:46 discord.client INFO Cleaning up after 5 tasks.
+03-23 20:46 discord.client INFO Closing the event loop.
+03-23 20:46 discord.client INFO logging in using static token
+03-23 20:46 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-23 20:46 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-23 20:46 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-nz9k",{"micros":85165,"calls":["discord-sessions-prd-1-46",{"micros":80323,"calls":["start_session",{"micros":74265,"calls":["api-prd-main-9dfh",{"micros":66765,"calls":["get_user",{"micros":3457},"add_authorized_ip",{"micros":4799},"get_guilds",{"micros":5672},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":5,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: 1a56e384717f374131fd548a733f15ec).
+03-23 20:49 discord.client INFO Cleaning up tasks.
+03-23 20:49 discord.client INFO Cleaning up after 5 tasks.
+03-23 20:49 discord.client INFO Closing the event loop.
+03-23 20:49 discord.client INFO logging in using static token
+03-23 20:49 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-23 20:49 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-23 20:49 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-w63d",{"micros":58929,"calls":["discord-sessions-prd-1-15",{"micros":51975,"calls":["start_session",{"micros":36691,"calls":["api-prd-main-jfrb",{"micros":34047,"calls":["get_user",{"micros":3080},"add_authorized_ip",{"micros":1484},"get_guilds",{"micros":1513},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":3,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: e1ea02512fc164bba1ea8f0f0562921f).
+03-23 20:50 discord.client INFO Cleaning up tasks.
+03-23 20:50 discord.client INFO Cleaning up after 5 tasks.
+03-23 20:50 discord.client INFO Closing the event loop.

@@ -148,7 +148,10 @@ async def cmdConfigParser(ctx, *args):
                         if args[2].lower() in mpaConfig:
                             await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
                     except IndexError:
-                        await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
+                        if args[2] in mpaConfig:
+                            await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigSet', cmdConfigParser.__name__, args[2])
+                        else:
+                            await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
                     return
                 else:
                     await sendErrorMessage.noCommandPermissions(ctx, cmdConfigParser.__name__)
@@ -198,13 +201,15 @@ async def cmdConfigParser(ctx, *args):
                     else:
                         await showNothing(ctx, args[2])
                 except IndexError:
-                    await sendErrorMessage.invalidArguments(ctx, 'badSetGlobalArguments', cmdConfigParser.__name__)
+                    if args[2] in mpaConfig or args[2] in defaultMpaConfig:
+                        await sendErrorMessage.invalidArguments(ctx, 'invalidGlobalConfigSet', cmdConfigParser.__name__, args[2])
+                    else:
+                        await sendErrorMessage.invalidArguments(ctx, 'badSetGlobalArguments', cmdConfigParser.__name__)
             else:
                 print (args)
                 await showNothing(ctx, args[1])
                 return
         except IndexError:
-            
             await sendErrorMessage.invalidArguments(ctx, 'badSetArguments', cmdConfigParser.__name__)
             return
     # Clears configurations
@@ -218,8 +223,10 @@ async def cmdConfigParser(ctx, *args):
                         if args[2].lower() in mpaConfig:
                             await setDefaultConfig(ctx, defaultConfigQuery, args[2], args[3])
                     except IndexError:
-                        
-                        await sendErrorMessage.invalidArguments(ctx, 'badSetDefaultArguments', cmdConfigParser.__name__)
+                        if args[2] in mpaConfig or args[2] in defaultMpaConfig:
+                            await sendErrorMessage.invalidArguments(ctx, 'invalidDefaultConfigRemove', cmdConfigParser.__name__, args[2])
+                        else:
+                            await sendErrorMessage.invalidArguments(ctx, 'badRemoveDefaultArguments', cmdConfigParser.__name__)
                     return
                 else:
                     await sendErrorMessage.noCommandPermissions(ctx, cmdConfigParser.__name__)
@@ -263,9 +270,11 @@ async def cmdConfigParser(ctx, *args):
                     else:
                         await showNothing(ctx, args[2])
                 except IndexError:
-                    await sendErrorMessage.invalidArguments(ctx, 'badSetGlobalArguments', cmdConfigParser.__name__)
+                    if args[2] in mpaConfig or args[2] in defaultMpaConfig:
+                        await sendErrorMessage.invalidArguments(ctx, 'invalidGlobalConfigRemove', cmdConfigParser.__name__, args[2])
+                    else:
+                        await sendErrorMessage.invalidArguments(ctx, 'badRemoveGlobalArguments', cmdConfigParser.__name__)
             else:
-                print (args)
                 await showNothing(ctx, args[1])
                 return
         except IndexError:

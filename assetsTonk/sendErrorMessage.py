@@ -29,7 +29,7 @@ async def mpaTypeNotFound(ctx, mpaType, commandName):
     await ctx.send(f'Unable to find a banner with the name {mpaType}! Please check your spelling.\nError ID: {errorID}')
     return
 
-async def invalidArguments(ctx, invalidType, commandName, commandArgs):
+async def invalidArguments(ctx, invalidType, commandName, commandArgs: str='null'):
     errorID = 'otamay'
     print (f'Error {invalidArguments.__name__} ({invalidType}) called by {ctx.author.name} (ID: {ctx.author.id}), command called from: {commandName}')
     #await ctx.send('Invalid parameter specified')
@@ -50,19 +50,19 @@ async def invalidArguments(ctx, invalidType, commandName, commandArgs):
         changeType = 'remove'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
-    elif invalidType == 'invalidServerConfigSet':
-        changeType = 'set server'
+    elif invalidType == 'invalidGlobalConfigSet':
+        changeType = 'set global'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['setUsage']}`", inline=False)
             em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
             em.add_field(name='Example', value=f"```{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['example']}```", inline=False)
-    elif invalidType == 'invalidServerConfigRoleRemove':
-        changeType = 'remove server'
+    elif invalidType == 'invalidGlobalConfigRoleRemove':
+        changeType = 'remove global'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
             em.add_field(name='Where', value=f"{helpDict[f'{commandArgs}']['where']}", inline=False)
-    elif invalidType == 'invalidServerConfigRemove':
-        changeType = 'remove server'
+    elif invalidType == 'invalidGlobalConfigRemove':
+        changeType = 'remove global'
         if commandArgs in helpDict.keys():
             em.add_field(name='Usage', value=f"`{commandPrefix} {changeType} {helpDict[f'{commandArgs}']['removeUsage']}`", inline=False)
     elif invalidType == 'invalidDefaultConfigSet':
@@ -84,6 +84,8 @@ async def invalidArguments(ctx, invalidType, commandName, commandArgs):
         em.add_field(name='Item does not exist', value='The item you specified was not found in the config.', inline=False)
     elif invalidType == 'ItemAlreadyExists':
         em.add_field(name='Item already exists', value='This item is already set to what you are trying to set it to.', inline=False)
+    elif invalidType == 'badSetGlobalArguments':
+        em.add_field(name='Invalid arguements provided', value='Please check your spelling and try again.', inline=False)
     else:
         em.add_field(name='No help found', value="No Usage doc available for this flag.", inline=False)
     await ctx.send('', embed=em)
