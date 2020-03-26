@@ -183,12 +183,12 @@ async def removempa(ctx, client):
         try:
             def is_bot(m):
                 return m.author == client.user
-            tonkDB.removeMPATable(ctx.guild.id, ctx.channel.id, mpaMessageID, str(datetime.utcnow()))
-            print(ctx.author.name + ' Closed an MPA on ' + ctx.guild.name)
             # This is to delete the list and the broadcast message, will only delete messages that are made by the bot
             await ctx.channel.purge(limit=3, around=startTime, check=is_bot)
             # Deletes the rest of the content in the channel, except for pinned messages
             await ctx.channel.purge(limit=100, after=startTime, check=is_pinned)
+            tonkDB.removeMPATable(ctx.guild.id, ctx.channel.id, mpaMessageID, str(datetime.utcnow()))
+            print(ctx.author.name + ' Closed an MPA on ' + ctx.guild.name)
             return str(mpaMessage.id)
         except KeyError:
             pass
@@ -651,15 +651,6 @@ async def changeClass(ctx, mpaArg):
         await sendErrorMessage.mpaChannelNotEnabled(ctx, changeClass.__name__)
 
 
-
-# Arguements to be taken in DB revision: message, dbQuery, EQList, SubDict, maxParticipants, inputstring)
-# message: The message object to modify when updating the EQ List display on the channel
-# dbQuery: Dictionary object to query configuration items for user/server preferences
-# EQList: Actual EQ list data, which will be parsed and displayed on the channel
-# SubDict: Reserve list data, same behavior as previously
-# privateMpa: Yes/no for guest enabled
-# maxParticipants: Max amount of people in the MPA.
-# inputstring: Same behavior as before.
 async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, SubDict, privateMpa, participantCount, maxParticipants, inputstring):
     sCount = 1
     mpaFriendly = ''
@@ -719,10 +710,6 @@ async def generateList(ctx, listMessageID, dbQuery, defaultConfigQuery, EQList, 
         print(ctx.author.name + ' Started an MPA on ' + ctx.guild.name)
         mpaMessage = await ctx.fetch_message(listMessageID)
         traceback.print_exc(file=sys.stdout)
-        #MPACount += 1
-       # await client.get_channel(OtherIDDict['ControlPanel']).send('```css\n' + ctx.author.name + '#' + str(ctx.author.discriminator) + ' (ID: ' + str(ctx.author.id) + ') ' + 'Started an MPA on ' + ctx.guild.name + '\nAmount of Active MPAs: ' + str(MPACount) + '\nTimestamp: ' + str(datetime.now()) + '```')
-        #print('Amount of Active MPAs: ' + str(MPACount))
-        #mpaMessage = await ctx.channel.send('', embed=em)
     except Exception:
         traceback.print_exc(file=sys.stdout)
 

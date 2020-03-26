@@ -51,31 +51,6 @@ def addMpaChannel(guildID, newChannelID, timeStamp):
     )
     return
 
-# def updateMpaAutoExpirationChannels(guildID, newChannelID, dbQuery):
-#     try:
-#         if len(dbQuery['Items'][0]['mpaAutoExpirationChannels']) > 0:   
-#             dbTable.update_item(
-#             Key={
-#                 'guildID': f"{guildID}"
-#             },
-#             UpdateExpression="SET mpaAutoExpirationChannels = list_append(mpaAutoExpirationChannels, :newmpachannel)",
-#             ExpressionAttributeValues={
-#                 ':newmpachannel': [f"{newChannelID}"]
-#             }
-#             )
-#     except KeyError:
-#             dbTable.update_item(
-#             Key={
-#                 'guildID': f"{guildID}"
-#             },
-#             UpdateExpression="SET mpaAutoExpirationChannels = if_not_exists(mpaAutoExpirationChannels, :newmpachannel)",
-#             ExpressionAttributeValues={
-#                 ':newmpachannel': [f"{newChannelID}"]
-#             }
-#             )
-#     return
-
-
 def removeMpaChannel(guildID, channelID, channelIndex, timeStamp):
     dbTable.update_item(
         Key={
@@ -90,53 +65,6 @@ def removeMpaChannel(guildID, channelID, channelIndex, timeStamp):
         }
     )
     return
-
-
-def addMpaBlockNumber(guildID, channelID: str, blockNumber: str, timeStamp):
-    dbTable.update_item(
-        Key={
-            'guildID': f"{guildID}"
-        },
-        UpdateExpression=f"SET mpaConfig.#channelID.mpaBlock = :block, lastUpdated = :timestamp",
-        ExpressionAttributeNames={
-            '#channelID': f"{channelID}"
-        },
-        ExpressionAttributeValues={
-            ':block': f"{blockNumber}",
-            ':timestamp': f"{timeStamp}"
-        }
-    )
-    return
-
-def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
-    dbTable.update_item(
-        Key={
-            'guildID': f"{guildID}"
-        },
-        UpdateExpression=f"REMOVE mpaConfig.#channelID.mpaBlock SET lastUpdated = :timestamp",
-        ExpressionAttributeNames={
-            '#channelID': f"{channelID}"
-        },
-        ExpressionAttributeValues={
-            ':timestamp': f"{timeStamp}"
-        }
-    )
-    return
-
-# def removeMpaBlockNumber(guildID, channelID: str, timeStamp):
-#     dbTable.update_item(
-#         Key={
-#             'guildID': f"{guildID}"
-#         },
-#         UpdateExpression=f"REMOVE mpaConfig.#channelID.mpaBlock SET lastUpdated = :timestamp",
-#         ExpressionAttributeNames={
-#             '#channelID': f"{channelID}"
-#         },
-#         ExpressionAttributeValues={
-#             ':timestamp': f"{timeStamp}"
-#         }
-#     )
-#     return
 
 def startMPATable(guildID, channelID, messageID, EQList, SubList, privateMpa, participantCount, maxParticipants, expirationDate, startDate):
     print (startDate)

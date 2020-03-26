@@ -40,3 +40,33 @@
 03-23 20:50 discord.client INFO Cleaning up tasks.
 03-23 20:50 discord.client INFO Cleaning up after 5 tasks.
 03-23 20:50 discord.client INFO Closing the event loop.
+03-24 19:55 discord.client INFO logging in using static token
+03-24 19:55 discord.client INFO Cleaning up tasks.
+03-24 19:55 discord.client INFO Closing the event loop.
+03-24 19:55 discord.client INFO logging in using static token
+03-24 19:55 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-24 19:55 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-24 19:55 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-k168",{"micros":69618,"calls":["discord-sessions-prd-1-34",{"micros":67938,"calls":["start_session",{"micros":62195,"calls":["api-prd-main-z3tm",{"micros":57880,"calls":["get_user",{"micros":5607},"add_authorized_ip",{"micros":2726},"get_guilds",{"micros":4712},"coros_wait",{"micros":0}]}]},"guilds_connect",{"micros":7,"calls":[]},"presence_connect",{"micros":2,"calls":[]}]}]}] (Session ID: 12a373cf919bfa0fc04c09c7594d7e59).
+03-26 18:16 discord.client INFO logging in using static token
+03-26 18:16 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-26 18:16 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-26 18:16 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-7f20",{"micros":52156,"calls":["discord-sessions-prd-1-22",{"micros":50367,"calls":["start_session",{"micros":47388,"calls":["api-prd-main-wlx7",{"micros":43707,"calls":["get_user",{"micros":3089},"add_authorized_ip",{"micros":1836},"get_guilds",{"micros":6895},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":6,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: dc2ef6a768a89fe1d40593628b4a1e1b).
+03-26 18:19 discord.client INFO Cleaning up tasks.
+03-26 18:19 discord.client INFO Cleaning up after 5 tasks.
+03-26 18:19 discord.client INFO All tasks finished cancelling.
+03-26 18:19 discord.client INFO Closing the event loop.
+03-26 18:24 discord.client INFO logging in using static token
+03-26 18:25 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-26 18:25 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-26 18:25 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-c76b",{"micros":38371,"calls":["discord-sessions-prd-1-63",{"micros":36439,"calls":["start_session",{"micros":33078,"calls":["api-prd-main-ckbb",{"micros":29367,"calls":["get_user",{"micros":3270},"add_authorized_ip",{"micros":1807},"get_guilds",{"micros":2182},"coros_wait",{"micros":2}]}]},"guilds_connect",{"micros":6,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: 909363065d4f4ce5fbc25bde364eedd3).
+03-26 18:25 discord.client INFO Cleaning up tasks.
+03-26 18:25 discord.client INFO Cleaning up after 5 tasks.
+03-26 18:25 discord.client INFO Closing the event loop.
+03-26 18:25 discord.client INFO logging in using static token
+03-26 18:25 discord.gateway INFO Created websocket connected to wss://gateway.discord.gg?encoding=json&v=6&compress=zlib-stream
+03-26 18:25 discord.gateway INFO Shard ID None has sent the IDENTIFY payload.
+03-26 18:25 discord.gateway INFO Shard ID None has connected to Gateway: ["gateway-prd-main-h07x",{"micros":68240,"calls":["discord-sessions-prd-1-40",{"micros":54875,"calls":["start_session",{"micros":51799,"calls":["api-prd-main-jp6w",{"micros":47100,"calls":["get_user",{"micros":3665},"add_authorized_ip",{"micros":3799},"get_guilds",{"micros":2250},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":5,"calls":[]},"presence_connect",{"micros":2,"calls":[]}]}]}] (Session ID: 0c6fc418e7f582b388910cf41cfb322a).
+03-26 18:30 discord.client INFO Cleaning up tasks.
+03-26 18:30 discord.client INFO Cleaning up after 5 tasks.
+03-26 18:30 discord.client INFO All tasks finished cancelling.
+03-26 18:30 discord.client INFO Closing the event loop.

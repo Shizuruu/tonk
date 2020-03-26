@@ -185,106 +185,106 @@ async def mpa_schedulerclock():
 async def on_message(message):
     if message.content.startswith('!'):
         print (f'{message.author.name} ({message.author.id}) has called for the command {message.content}')
-        # These commands are for whoever runs this bot. 
-        if message.content.lower() == '!!shutdown':
-            if message.author.id == ConfigDict['OWNERID']:
-                if message.guild.id == serverIDDict['Ishana']:
-                    await message.channel.send('Shutting down. If anything goes wrong during the downtime, please blame yui.')
-                else:
-                    await message.channel.send('DONT DO THIS TO ME MA-')
-                    shutdownRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370340076527288321)
-                    await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is {shutdownRole.mention}')
-                await client.logout()
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
-        # Closes all MPAs the bot has ever known to be active at this moment. Easy to use before shutting the bot down.
-        elif message.content.lower() == '!!burnbabyburn':
-            if message.author.id == ConfigDict['OWNERID']:
-                if len(ActiveMPA) > 0:
-                    for index in range(len(ActiveMPA)):
-                        await client.get_channel(ActiveMPA[index]).send('!removempa')
-                    await message.channel.send('Successfully closed all existing MPAs on all servers.')
-                else:
-                    await message.channel.send('No MPAs currently exist.')
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
-        elif message.content.lower().startswith('!!leaveserver'):
-            if message.author.id == ConfigDict['OWNERID']:
-                userstr = message.content
-                userstr = userstr.replace("!!leaveserver", "")
-                userstr = userstr.replace(" ", "")
-                await client.get_guild(int(userstr)).leave()
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
-        elif message.content.lower().startswith('!!findroleid'):
-            if message.author.id == ConfigDict['OWNERID']:
-                userstr = message.content
-                userstr = userstr.replace("!!findroleid", "")
-                userstr = userstr.replace(" ", "")
-                foundRole = discord.utils.get(message.guild.roles, name=userstr)
-                if foundRole is not None:
-                    em = discord.Embed(colour=foundRole.colour)
-                    em.add_field(name='Role Name:', value=foundRole.name, inline=False)
-                    em.add_field(name='Role ID', value=foundRole.id, inline=False)
-                    await message.channel.send('', embed=em)
-                else:
-                    await message.channel.send('Unable to find a role with that name!')
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
-        elif message.content.lower().startswith('!!announce'):
-            if message.author.id == ConfigDict['OWNERID']:
-                userstr = message.content
-                if message.content.startswith('!!announce'):
-                    userstr = userstr.replace("!!announce", "")
-                else:
-                    userstr = userstr.replace("!!announce", "")
-                if message.guild.id == ConfigDict['EMOJISTORAGEID']:
-                    return
-                else:
-                    for item in client.guilds:
-                        if item.id == ConfigDict['OWNERSERVERID'] or item.id == ConfigDict['EMOJISTORAGEID']:
-                            pass
-                        try:
-                            await client.get_channel(item.default_channel.id).send(f'{userstr}')
-                            await client.get_channel(ConfigDict['ADMINCHANNELID']).send('Sent announcement to ' + item.name)
-                        except AttributeError:
-                            await client.get_channel(ConfigDict['ADMINCHANNELID']).send('Error trying to send announcement to ' + item.name)
-                            pass
-                        await client.get_channel(ConfigDict['ADMINCHANNELID']).send('All announcements sent.')
-                # await client.send_message(client.get_channel('326883995641970689'), userstr)
-            await message.delete()
-        elif message.content.lower() == '!!lastrestart':
-            if message.author.id == ConfigDict['OWNERID']:
-                await message.channel.send(str(lastRestart))
-            else:
-                await message.channel.send('Only Tenj may use this command.')
-        elif message.content.lower() == '!!listservers':
-            serverlist = ''
-            if message.author.id == ConfigDict['OWNERID']:
-                for item in client.guilds:
-                    serverlist += (item.name + f'\n{item.id}' + '\n')
-                em = discord.Embed(description=serverlist, colour=0x0099FF)
-                em.set_author(name='Joined Servers')
-                await message.channel.send('', embed=em)
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.') 
-        elif message.content.lower() == '!!restart':
-            if message.author.id == ConfigDict['OWNERID']:
-                await message.channel.send('Tonk will now restart!')
-                print ('The restart command was issued! Restarting Bot...')
-                end = time.time()
-                runTime = (end - start)
-                restartRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370339592055947266)
-                await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is {restartRole.mention}' + '\nRun time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(runTime)))
-                os.execl(sys.executable, *([sys.executable]+sys.argv))
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
-        elif message.content.lower() == '!!clearconsole':
-            if message.author.id == ConfigDict['OWNERID']:
-                await message.channel.send('Clearing Console')
-                os.system('cls' if os.name == 'nt' else 'clear')
-            else:
-                await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        # # These commands are for whoever runs this bot. 
+        # if message.content.lower() == '!!shutdown':
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         if message.guild.id == serverIDDict['Ishana']:
+        #             await message.channel.send('Shutting down. If anything goes wrong during the downtime, please blame yui.')
+        #         else:
+        #             await message.channel.send('DONT DO THIS TO ME MA-')
+        #             shutdownRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370340076527288321)
+        #             await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is {shutdownRole.mention}')
+        #         await client.logout()
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        # # Closes all MPAs the bot has ever known to be active at this moment. Easy to use before shutting the bot down.
+        # elif message.content.lower() == '!!burnbabyburn':
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         if len(ActiveMPA) > 0:
+        #             for index in range(len(ActiveMPA)):
+        #                 await client.get_channel(ActiveMPA[index]).send('!removempa')
+        #             await message.channel.send('Successfully closed all existing MPAs on all servers.')
+        #         else:
+        #             await message.channel.send('No MPAs currently exist.')
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        # elif message.content.lower().startswith('!!leaveserver'):
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         userstr = message.content
+        #         userstr = userstr.replace("!!leaveserver", "")
+        #         userstr = userstr.replace(" ", "")
+        #         await client.get_guild(int(userstr)).leave()
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        # elif message.content.lower().startswith('!!findroleid'):
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         userstr = message.content
+        #         userstr = userstr.replace("!!findroleid", "")
+        #         userstr = userstr.replace(" ", "")
+        #         foundRole = discord.utils.get(message.guild.roles, name=userstr)
+        #         if foundRole is not None:
+        #             em = discord.Embed(colour=foundRole.colour)
+        #             em.add_field(name='Role Name:', value=foundRole.name, inline=False)
+        #             em.add_field(name='Role ID', value=foundRole.id, inline=False)
+        #             await message.channel.send('', embed=em)
+        #         else:
+        #             await message.channel.send('Unable to find a role with that name!')
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        # elif message.content.lower().startswith('!!announce'):
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         userstr = message.content
+        #         if message.content.startswith('!!announce'):
+        #             userstr = userstr.replace("!!announce", "")
+        #         else:
+        #             userstr = userstr.replace("!!announce", "")
+        #         if message.guild.id == ConfigDict['EMOJISTORAGEID']:
+        #             return
+        #         else:
+        #             for item in client.guilds:
+        #                 if item.id == ConfigDict['OWNERSERVERID'] or item.id == ConfigDict['EMOJISTORAGEID']:
+        #                     pass
+        #                 try:
+        #                     await client.get_channel(item.default_channel.id).send(f'{userstr}')
+        #                     await client.get_channel(ConfigDict['ADMINCHANNELID']).send('Sent announcement to ' + item.name)
+        #                 except AttributeError:
+        #                     await client.get_channel(ConfigDict['ADMINCHANNELID']).send('Error trying to send announcement to ' + item.name)
+        #                     pass
+        #                 await client.get_channel(ConfigDict['ADMINCHANNELID']).send('All announcements sent.')
+        #         # await client.send_message(client.get_channel('326883995641970689'), userstr)
+        #     await message.delete()
+        # elif message.content.lower() == '!!lastrestart':
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         await message.channel.send(str(lastRestart))
+        #     else:
+        #         await message.channel.send('Only Tenj may use this command.')
+        # elif message.content.lower() == '!!listservers':
+        #     serverlist = ''
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         for item in client.guilds:
+        #             serverlist += (item.name + f'\n{item.id}' + '\n')
+        #         em = discord.Embed(description=serverlist, colour=0x0099FF)
+        #         em.set_author(name='Joined Servers')
+        #         await message.channel.send('', embed=em)
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.') 
+        # elif message.content.lower() == '!!restart':
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         await message.channel.send('Tonk will now restart!')
+        #         print ('The restart command was issued! Restarting Bot...')
+        #         end = time.time()
+        #         runTime = (end - start)
+        #         restartRole = discord.utils.get(client.get_guild(226835458552758275).roles, id=370339592055947266)
+        #         await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is {restartRole.mention}' + '\nRun time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(runTime)))
+        #         os.execl(sys.executable, *([sys.executable]+sys.argv))
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
+        # elif message.content.lower() == '!!clearconsole':
+        #     if message.author.id == ConfigDict['OWNERID']:
+        #         await message.channel.send('Clearing Console')
+        #         os.system('cls' if os.name == 'nt' else 'clear')
+        #     else:
+        #         await message.channel.send('CANT LET YOU DO THAT, STARFOX.')
         await client.process_commands(message)
 
 
@@ -347,6 +347,7 @@ async def cmd_startmpa(ctx, mpaType: str = 'default', *, message: str = ''):
             return
         startmpaResult = await mpaControl.startmpa(ctx, message, mpaType)
         if startmpaResult is not None:
+            await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'```css\n{ctx.author.name}#{str(ctx.author.discriminator)} (ID: {str(ctx.author.id)}) Started an MPA on {ctx.guild.name}\nTimestamp: {str(datetime.now())}```')
             expirationDate[startmpaResult['listMessageID']] = {
                 'channelID': str(ctx.channel.id),
                 'expirationDate': startmpaResult['expirationDate']
@@ -362,6 +363,8 @@ async def cmd_removempa(ctx):
     if hasManagerPermissions or ctx.author.id == client.user.id:
         removeMpaID = await mpaControl.removempa(ctx, client)
         if removeMpaID is not None:
+            await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'```diff\n- {ctx.author.name}# {ctx.author.discriminator} (ID: {str(ctx.author.id)}) Closed an MPA on {ctx.guild.name}\nTimestamp: {str(datetime.now())}```')
+            print(f'{ctx.author.name} Closed an MPA on {ctx.guild.name}')
             del expirationDate[removeMpaID]
     elif hasManagerPermissions is not None:
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_removempa.name}")
