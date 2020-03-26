@@ -2,31 +2,31 @@
 # This module matches the user input with the index of the class array for the bot.
 def findClass(userstring):
     if userstring.lower() == 'hu' or userstring.lower() == 'hunter':
-        return 0
+        return 'hunter'
     elif userstring.lower() == 'fi' or userstring.lower() == 'fighter':
-        return 1
+        return 'fighter'
     elif userstring.lower() == 'ra' or userstring.lower() == 'ranger':
-        return 2
+        return 'ranger'
     elif userstring.lower() == 'gu' or userstring.lower() == 'gunner':
-        return 3
+        return 'gunner'
     elif userstring.lower() == 'fo' or userstring.lower() == 'force':
-        return 4
+        return 'force'
     elif userstring.lower() == 'te' or userstring.lower() == 'techer':
-        return 5
+        return 'techer'
     elif userstring.lower() == 'bo' or userstring.lower() == 'bouncer':
-        return 6
+        return 'bouncer'
     elif userstring.lower() == 'br' or userstring.lower() == 'braver':
-        return 7
+        return 'braver'
     elif userstring.lower() == 'su' or userstring.lower() == 'summoner':
-        return 8
+        return 'summoner'
     elif userstring.lower() == 'hr' or userstring.lower() == 'hero':
-        return 9
+        return 'hero'
     elif userstring.lower() == 'ph' or userstring.lower() == 'phantom':
-        return 10
+        return 'phantom'
     elif userstring.lower() == 'et' or userstring.lower() == 'etoile':
-        return 11
+        return 'etoile'
     else:
-        return 12
+        return 'noclass'
 
 def findClassName(classID):
     if classID == 0:

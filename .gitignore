@@ -4,8 +4,5 @@ assetsTonk/__pycache__/
 *.jpg
 *.bak
 *.log
-*mpa*.json
 .idea/
-assetsTonk/jsonDB/
 assetsTonk/configs/
-assetsTonk/devDB/

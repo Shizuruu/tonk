@@ -2,7 +2,7 @@ import boto3
 import json
 from boto3.dynamodb.conditions import Key
 
-ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+ConfigFile = open('assetsTonk/configs/TonkConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 
 dynamodb = boto3.resource('dynamodb', region_name=f"{ConfigDict['DB-REGION']}", aws_access_key_id=f"{ConfigDict['AWS_ACCESS_KEY_ID']}", aws_secret_access_key=f"{ConfigDict['AWS_SECRET_ACCESS_KEY']}")

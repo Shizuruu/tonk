@@ -6,7 +6,7 @@ import discord
 
 helpFile = open('assetsTonk/helpTexts/configUsage.json')
 helpDict = json.loads(helpFile.read())
-ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+ConfigFile = open('assetsTonk/configs/TonkConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 commandPrefix = f"{ConfigDict['COMMAND_PREFIX']}"
 commandPrefix = f"{commandPrefix}config"

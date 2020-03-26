@@ -11,7 +11,7 @@ from assetsTonk import sendErrorMessage
 from assetsTonk import tonkDB
 from assetsTonk import parseDB
 
-ConfigFile = open('assetsTonk/configs/TonkDevConfig.json')
+ConfigFile = open('assetsTonk/configs/TonkConfig.json')
 ConfigDict = json.loads(ConfigFile.read())
 botOwnerID = ConfigDict['OWNERID']
 embedColor = discord.Colour(value=int("14cc00", 16))
