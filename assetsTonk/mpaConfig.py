@@ -178,6 +178,10 @@ async def cmdConfigParser(ctx, *args):
                 mpaConfig = {}
                 defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
                 pass
+            except KeyError:
+                channelID = None
+                mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
             if args[1] in mpaConfig:
                 if channelID is not None:
                     await setConfig(ctx, dbQuery, args[1], args[2], channelID)
