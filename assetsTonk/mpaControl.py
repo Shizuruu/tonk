@@ -188,7 +188,6 @@ async def removempa(ctx, client):
             # Deletes the rest of the content in the channel, except for pinned messages
             await ctx.channel.purge(limit=100, after=startTime, check=is_pinned)
             tonkDB.removeMPATable(ctx.guild.id, ctx.channel.id, mpaMessageID, str(datetime.utcnow()))
-            print(ctx.author.name + ' Closed an MPA on ' + ctx.guild.name)
             return str(mpaMessage.id)
         except KeyError:
             pass
