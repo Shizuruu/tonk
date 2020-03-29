@@ -19,7 +19,7 @@ You can set roles as managers in 2 ways:
 Go to the text channel you want to make a role an MPA manager of and type `!config set mpaManagerRoles @<rolename>` where <rolename> is the name of the role you want to grant permissions to.
 
 2. Designating a manager for the whole server
-On any channel (that Tonk can see) type `!config set server mpaManagerRoles @<rolename>`. This will grant the role manager permissions to all channels across the server.
+On any channel (that Tonk can see) type `!config set global mpaManagerRoles @<rolename>`. This will grant the role manager permissions to all channels across the server.
 
 Next, you will want to make sure Tonk has certain permissions for the channel you want to dedicate as the MPA channels. Tonk operates under the condition that the MPA channel will not be used as a conversational channel, but as a separate dedicated channel to hold the list. This means **Tonk can and will delete messages from the channel that you set it to be active on, so please keep any conversations out of the MPA channel if you want to hold onto it for future references.**
 
