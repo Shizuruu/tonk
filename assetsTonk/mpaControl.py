@@ -184,7 +184,7 @@ async def removempa(ctx, client):
             def is_bot(m):
                 return m.author == client.user
             # This is to delete the list and the broadcast message, will only delete messages that are made by the bot
-            await ctx.channel.purge(limit=3, around=startTime, check=is_bot)
+            await ctx.channel.purge(limit=4, around=startTime, check=is_bot)
             # Deletes the rest of the content in the channel, except for pinned messages
             await ctx.channel.purge(limit=100, after=startTime, check=is_pinned)
             tonkDB.removeMPATable(ctx.guild.id, ctx.channel.id, mpaMessageID, str(datetime.utcnow()))
