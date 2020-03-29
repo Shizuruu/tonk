@@ -100,7 +100,11 @@ async def cmdConfigParser(ctx, *args):
                     mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{channelID}'].keys()
                 except IndexError:
                     channelID = None
-                    mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                    try:
+                        mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                    except KeyError:
+                        await showNothing(ctx, args[1])
+                        return
                 except TypeError:
                     channelID = None
                     mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
@@ -170,8 +174,12 @@ async def cmdConfigParser(ctx, *args):
                 defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
             except IndexError:
                 channelID = None
-                mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
-                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                try:
+                    mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                    defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                except KeyError:
+                    await showNothing(ctx, args[1])
+                    return
             except TypeError:
                 channelID = None
                 mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
@@ -249,8 +257,12 @@ async def cmdConfigParser(ctx, *args):
                 defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
             except IndexError:
                 channelID = None
-                mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
-                defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                try:
+                    mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
+                    defaultMpaConfig = defaultConfigQuery['Items'][0]['mpaConfig'].keys()
+                except KeyError:
+                    await showNothing(ctx, args[1])
+                    return
             except TypeError:
                 channelID = None
                 mpaConfig = dbQuery['Items'][0]['mpaConfig'][f'{ctx.channel.id}'].keys()
