@@ -1,2 +1,4 @@
 deploy:
+    only:
+        - master@alec4555/tonk/
     script: curl -XPOST http://rundeck.adahinh.net:4440/api/34/job/3c108591-2126-41ce-bb70-dad26846ef4c/run\?authtoken=$adahinh_Rundeck_API_Key
