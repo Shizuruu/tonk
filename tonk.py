@@ -467,27 +467,6 @@ async def cmd_config(ctx, *args):
         await sendErrorMessage.noCommandPermissions(ctx, f"cmd_{cmd_config.name}")
         return
 
-
-# Debugging command
-# @client.command(name='eval')
-# async def cmd_eval(ctx, *code):
-#     if ctx.author.id == ConfigDict['OWNERID']:
-#         try:
-#             result = eval(code)
-#         except Exception:
-#             formatted_lines = traceback.format_exc().splitlines()
-#             await ctx.send('Failed to Evaluate.\n```py\n{}\n{}\n```'.format(formatted_lines[-1], '/n'.join(formatted_lines[4:-1])))
-#             return
-
-#         if asyncio.iscoroutine(result):
-#             result = await result
-
-#         if result:
-#             await ctx.send('Evaluated Successfully.\n```{}```'.format(result))
-#             return
-#     else:
-#         await ctx.send('No.')
-
 # Opens the MPA to non-approved roles.
 @client.command(name='openmpa')
 async def cmd_openmpa(ctx):
