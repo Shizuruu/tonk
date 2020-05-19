@@ -130,17 +130,17 @@ def fixExpirationDict(mpaMessageID):
         }
 
 # Background task that runs every second to check if there's any MPA that will be expiring soon.
-async def expiration_checker():
-    await client.wait_until_ready()
-    for messageID in list(expirationDate):
-        nowTime = int(time.mktime(datetime.now().timetuple()))
-        if (int(expirationDate[messageID]['expirationDate']) - 15) == nowTime:
-            await client.get_channel(int(expirationDate[messageID]['channelID'])).send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `15` seconds if no actions are taken!** :warning:")
-        if expirationDate[messageID]['expirationDate'] == nowTime:
-            print ("Expiration reached")
-            context = await client.get_context(await client.get_channel(int(expirationDate[messageID]['channelID'])).fetch_message(id=int(messageID)))
-            removeMpaID = await mpaControl.removempa(context, client)
-            del expirationDate[removeMpaID]
+# async def expiration_checker():
+#     await client.wait_until_ready()
+#     for messageID in list(expirationDate):
+#         nowTime = int(time.mktime(datetime.now().timetuple()))
+#         if (int(expirationDate[messageID]['expirationDate']) - 15) == nowTime:
+#             await client.get_channel(int(expirationDate[messageID]['channelID'])).send(f":warning: **Inactivity Detected! This MPA will be automatically closed in `15` seconds if no actions are taken!** :warning:")
+#         if expirationDate[messageID]['expirationDate'] == nowTime:
+#             print ("Expiration reached")
+#             context = await client.get_context(await client.get_channel(int(expirationDate[messageID]['channelID'])).fetch_message(id=int(messageID)))
+#             removeMpaID = await mpaControl.removempa(context, client)
+#             del expirationDate[removeMpaID]
 
 # Background task that ticks every second and will start an mpa if the scheduled time comes
 async def mpa_schedulerclock():
@@ -575,10 +575,10 @@ async def on_ready():
         await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk is now {onlineRole.mention}' + '\nStartup time: ' + time.strftime('%H hours, %M minutes, %S seconds', time.gmtime(loadupTime)) + '\nConnected to **' + str(connectedServers) + '** servers' + '\nLast Restarted: ' + lastRestart)
     else:
         await client.get_channel(ConfigDict['ADMINCHANNELID']).send(f'Tonk has {reconnectRole.mention}')
-    while True:
-        await expiration_checker()
-      #  await mpa_schedulerclock()
-        await asyncio.sleep(1)
+    # while True:
+    #     await expiration_checker()
+    #   #  await mpa_schedulerclock()
+    #     await asyncio.sleep(1)
 
 # Global command handler
 #@client.event
