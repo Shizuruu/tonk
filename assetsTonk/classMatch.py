@@ -25,6 +25,8 @@ def findClass(userstring):
         return 'phantom'
     elif userstring.lower() == 'et' or userstring.lower() == 'etoile':
         return 'etoile'
+    elif userstring.lower() == 'lu' or userstring.lower() == 'luster':
+        return 'luster'
     else:
         return 'noclass'
 
@@ -54,4 +56,6 @@ def findClassName(classID):
     elif classID == 11:
         return "Etoile"
     elif classID == 12:
+        return "Luster"
+    elif classID == 13:
         return "None"
