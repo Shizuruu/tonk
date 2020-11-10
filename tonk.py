@@ -91,31 +91,31 @@ async def isManager(ctx):
         return True
     dbQuery = tonkDB.gidQueryDB(ctx.guild.id)
     mpaManagerRoles = parseDB.getMpaManagerRoles(ctx.channel.id, dbQuery)
-    mpaChannelList = dbQuery['Items'][0]['mpaChannels']
-    authorRoleID = str(ctx.author.top_role.id)
-    if type(mpaManagerRoles) is dict:
-        if mpaManagerRoles['channelManagerRoles'] is not None:
-            # Return true if the user's role is in either channel OR server manager roles, else return false
-            if authorRoleID in mpaManagerRoles['channelManagerRoles']:
+    # Compares author's roles to any configured role list, beginning with the channel specific settings
+    try:
+        # Return true if the user's role is in either channel OR server manager roles, else return false
+        authorID = [str(role.id) for role in ctx.author.roles]
+        sameRoles = (set(authorID)).intersection(set(mpaManagerRoles['channelManagerRoles']))
+        print (sameRoles)
+        if len(sameRoles) > 0:
+            return True
+        # User is not in channelManagerRoles and serverManagerRoles is not blank
+        elif (mpaManagerRoles['serverManagerRoles']) is not None:
+            sameRoles = (set(ctx.author.roles)).intersection(set(mpaManagerRoles['serverManagerRoles']))
+            if len(sameRoles) > 0:
                 return True
-            # User is not in channelManagerRoles and serverManagerRoles is not blank
-            elif (mpaManagerRoles['serverManagerRoles']) is not None:
-                if authorRoleID in mpaManagerRoles['serverManagerRoles']:
-                    return True
-            # These if statements should be ending the function on the return statement, if none of those conditions are met we return false.
-            return False
-        # Case: Channel manager roles is NOT configured, but server manager roles are
-        elif mpaManagerRoles['serverManagerRoles'] is not None:
-            if authorRoleID in mpaManagerRoles['serverManagerRoles']:
-                return True
-            else:
-                return False
-        # Other cases which is most likely both dictionaries are not configured at all.
-        elif (str(ctx.channel.id)) in (mpaChannelList):
-            return False
-        else:
-            return None
-    return None
+        return False
+    # Case: Channel manager roles is NOT configured, but server manager roles are
+    except TypeError:
+        print ('TypeError')
+        sameRoles = (set(ctx.author.roles)).intersection(set(mpaManagerRoles['serverManagerRoles']))
+        print(sameRoles)
+        if len(sameRoles) > 0:
+            return True
+        return False
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+        return None
 
 
 # Function called if the message ID in the expirationDate dictionary does not match with the new message ID passed by the mpaControl functions
